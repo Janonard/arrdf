@@ -39,53 +39,71 @@ impl Node {
 }
 
 pub struct Graph {
-    triples: HashMap<usize, Vec<(usize, usize)>>,
-    nodes: Vec<Node>,
+    nodes: Vec<(Node, Vec<(usize, usize)>)>,
+    node_lut: Option<HashMap<Node, usize>>,
 }
 
 impl Default for Graph {
     fn default() -> Self {
         Self {
-            triples: HashMap::new(),
             nodes: Vec::new(),
+            node_lut: None,
         }
     }
 }
 
 impl Graph {
+    pub fn with_node_lut() -> Self {
+        Self {
+            nodes: Vec::new(),
+            node_lut: Some(HashMap::new()),
+        }
+    }
+
+    pub fn add_node_lut(&mut self) {
+        if self.node_lut.is_some() {
+            return;
+        }
+
+        let mut node_lut = HashMap::with_capacity(self.nodes.len());
+        for i in 0..self.nodes.len() {
+            node_lut.insert(self.nodes[i].0.clone(), i);
+        }
+
+        self.node_lut = Some(node_lut);
+    }
+
     pub fn nodes(&self) -> impl Iterator<Item = &Node> {
-        self.nodes.iter()
+        self.nodes.iter().map(|(node, _)| node)
     }
 
     fn node_index(&self, node: &Node) -> Option<usize> {
-        for i in 0..self.nodes.len() {
-            if *node == self.nodes[i] {
-                return Some(i);
+        match &self.node_lut {
+            Some(lut) => lut.get(node).cloned(),
+            None => {
+                for i in 0..self.nodes.len() {
+                    if *node == self.nodes[i].0 {
+                        return Some(i);
+                    }
+                }
+                None
             }
         }
-        None
     }
 
-    fn node_impl(&self, referent: &str) -> Option<usize> {
-        for i in 0..self.nodes.len() {
-            let node_referent = self.nodes[i].referent().unwrap();
-            if node_referent == referent {
-                return Some(i);
-            }
+    pub fn contains(&self, node: &Node) -> bool {
+        match &self.node_lut {
+            Some(lut) => lut.contains_key(node),
+            None => self.nodes.iter().find(|contained_node| contained_node.0 == *node).is_some(),
         }
-        None
-    }
-
-    pub fn node<'a>(&'a self, referent: &str) -> Option<&'a Node> {
-        self.node_impl(referent).map(|i| &self.nodes[i])
     }
 
     fn relationships_impl(&self, index: usize) -> impl Iterator<Item = (&Node, &Node, &Node)> {
-        self.triples[&index].iter().map(move |(predicate, object)| {
+        self.nodes[index].1.iter().map(move |(predicate, object)| {
             (
-                &self.nodes[index],
-                &self.nodes[*predicate],
-                &self.nodes[*object],
+                &self.nodes[index].0,
+                &self.nodes[*predicate].0,
+                &self.nodes[*object].0,
             )
         })
     }
@@ -106,8 +124,12 @@ impl Graph {
     fn add_node_impl(&mut self, new_node: Node) -> usize {
         self.node_index(&new_node).unwrap_or_else(|| {
             let node_index = self.nodes.len();
-            self.nodes.push(new_node);
-            self.triples.insert(node_index, Vec::new());
+
+            if let Some(lut) = &mut self.node_lut {
+                lut.insert(new_node.clone(), node_index);
+            }
+            self.nodes.push((new_node, Vec::new()));
+
             node_index
         })
     }
@@ -117,22 +139,32 @@ impl Graph {
     }
 
     pub fn add_triple(&mut self, subject: Node, predicate: Node, object: Node) {
-        let subject = self.node_index(&subject).unwrap_or_else(|| self.add_node_impl(subject));
-        let predicate = self.node_index(&predicate).unwrap_or_else(|| self.add_node_impl(predicate));
-        let object = self.node_index(&object).unwrap_or_else(|| self.add_node_impl(object));
+        let subject = self
+            .node_index(&subject)
+            .unwrap_or_else(|| self.add_node_impl(subject));
+        let predicate = self
+            .node_index(&predicate)
+            .unwrap_or_else(|| self.add_node_impl(predicate));
+        let object = self
+            .node_index(&object)
+            .unwrap_or_else(|| self.add_node_impl(object));
 
-        self.triples
-            .get_mut(&subject)
-            .unwrap()
-            .push((predicate, object));
+        self.nodes[subject].1.push((predicate, object));
     }
 
-    fn remove_triple_impl(&mut self, subject: &Node, predicate: &Node, object: &Node) -> Option<()> {
+    fn remove_triple_impl(
+        &mut self,
+        subject: &Node,
+        predicate: &Node,
+        object: &Node,
+    ) -> Option<()> {
         let subject = self.node_index(subject)?;
         let predicate = self.node_index(predicate)?;
         let object = self.node_index(object)?;
 
-        self.triples.get_mut(&subject)?.retain(|(p, o)| *p != predicate || *o != object);
+        self.nodes[subject]
+            .1
+            .retain(|(p, o)| *p != predicate || *o != object);
 
         Some(())
     }
