@@ -73,12 +73,11 @@ impl Node {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
     use crate::node::Node;
+    use std::collections::HashMap;
 
     #[test]
     fn equivalance() {
-
         let blank_a = Node::blank();
         let blank_b = blank_a.clone();
         let blank_c = Node::blank();
@@ -111,7 +110,7 @@ mod tests {
         for node in Iterator::chain(blanks.iter(), nodes.iter()) {
             map.insert((*node).clone(), (*node).clone());
         }
-        
+
         assert_eq!(4, map.len());
         assert_eq!(blank_b, map[&blank_a]);
         assert_eq!(blank_b, map[&blank_b]);

@@ -1,8 +1,8 @@
 use crate::Node;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub struct Graph {
-    nodes: HashMap<Node, Vec<(Node, Node)>>,
+    nodes: HashMap<Node, HashSet<(Node, Node)>>,
 }
 
 impl Default for Graph {
@@ -18,64 +18,48 @@ impl Graph {
         }
     }
 
-    pub fn with_capacity(n_nodes: usize) -> Self {
+    pub fn with_capacity(n_subjects: usize) -> Self {
         Self {
-            nodes: HashMap::with_capacity(n_nodes),
+            nodes: HashMap::with_capacity(n_subjects),
         }
     }
 
-    pub fn contains(&self, node: &Node) -> bool {
+    pub fn contains_subject(&self, node: &Node) -> bool {
         self.nodes.contains_key(node)
     }
 
-    pub fn nodes(&self) -> impl Iterator<Item = &Node> {
+    pub fn subjects(&self) -> impl Iterator<Item = &Node> {
         self.nodes.keys()
     }
 
     pub fn relationships<'a>(
         &'a self,
-        subject: &Node,
-    ) -> Option<impl 'a + Iterator<Item = (Node, Node, Node)>> {
-        let subject = subject.clone();
+        subject: &'a Node,
+    ) -> Option<impl 'a + Iterator<Item = (&Node, &Node, &Node)>> {
         Some(
             self.nodes
-                .get(&subject)?
+                .get(subject)?
                 .iter()
-                .map(move |(predicate, object)| {
-                    (subject.clone(), predicate.clone(), object.clone())
-                }),
+                .map(move |(predicate, object)| (subject, predicate, object)),
         )
     }
 
-    pub fn triples<'a>(&'a self) -> impl 'a + Iterator<Item = (Node, Node, Node)> {
-        self.nodes()
+    pub fn triples(&self) -> impl Iterator<Item = (&Node, &Node, &Node)> {
+        self.subjects()
             .map(move |subject| self.relationships(subject).unwrap())
             .flatten()
     }
 
-    fn add_node(&mut self, new_node: Node) -> Node {
-        if self.nodes.contains_key(&new_node) {
-            new_node
-        } else {
-            self.nodes.insert(new_node.clone(), Vec::new());
-            new_node
-        }
-    }
-
     pub fn add_triple(&mut self, subject: Node, predicate: Node, object: Node) {
-        let subject = self.add_node(subject);
-        let predicate = self.add_node(predicate);
-        let object = self.add_node(object);
-
         self.nodes
-            .get_mut(&subject)
-            .unwrap()
-            .push((predicate, object));
+            .entry(subject)
+            .or_insert_with(|| HashSet::new())
+            .insert((predicate, object));
     }
 
     pub fn remove_triple(&mut self, subject: &Node, predicate: &Node, object: &Node) {
         if let Some(relationships) = self.nodes.get_mut(subject) {
-            relationships.retain(|(p, o)| p != predicate || o != object)
+            relationships.retain(|(p, o)| p != predicate || o != object);
         }
     }
 }
