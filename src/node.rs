@@ -41,6 +41,16 @@ impl std::ops::Deref for Node {
     }
 }
 
+impl std::fmt::Debug for Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        if self.is_blank() {
+            f.write_fmt(format_args!("Node <{:?}>", self.referent.as_ptr()))
+        } else {
+            f.write_fmt(format_args!("Node {:?}", self.referent.as_ref()))
+        }
+    }
+}
+
 impl Node {
     pub fn blank() -> Self {
         Self {
@@ -58,5 +68,57 @@ impl Node {
 
     pub fn internal(&self) -> &Rc<str> {
         &self.referent
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+    use crate::node::Node;
+
+    #[test]
+    fn equivalance() {
+
+        let blank_a = Node::blank();
+        let blank_b = blank_a.clone();
+        let blank_c = Node::blank();
+        let blanks = [&blank_a, &blank_b, &blank_c];
+
+        assert_eq!(blank_a, blank_b);
+        assert_ne!(blank_a, blank_c);
+        assert_ne!(blank_b, blank_c);
+
+        let node_a = Node::from("Hello");
+        let node_b = node_a.clone();
+        let node_c = Node::from("Hello");
+        let node_d = Node::from("World");
+        let nodes = [&node_a, &node_b, &node_c, &node_d];
+
+        assert_eq!(node_a, node_b);
+        assert_eq!(node_a, node_c);
+        assert_ne!(node_a, node_d);
+        assert_eq!(node_b, node_c);
+        assert_ne!(node_b, node_d);
+        assert_ne!(node_c, node_d);
+
+        for blank in &blanks {
+            for node in &nodes {
+                assert_ne!(*blank, *node);
+            }
+        }
+
+        let mut map: HashMap<Node, Node> = HashMap::new();
+        for node in Iterator::chain(blanks.iter(), nodes.iter()) {
+            map.insert((*node).clone(), (*node).clone());
+        }
+        
+        assert_eq!(4, map.len());
+        assert_eq!(blank_b, map[&blank_a]);
+        assert_eq!(blank_b, map[&blank_b]);
+        assert_eq!(blank_c, map[&blank_c]);
+        assert_eq!(node_c, map[&node_a]);
+        assert_eq!(node_c, map[&node_b]);
+        assert_eq!(node_c, map[&node_c]);
+        assert_eq!(node_d, map[&node_d]);
     }
 }

@@ -24,12 +24,12 @@ impl Graph {
         }
     }
 
-    pub fn nodes(&self) -> impl Iterator<Item = &Node> {
-        self.nodes.keys()
-    }
-
     pub fn contains(&self, node: &Node) -> bool {
         self.nodes.contains_key(node)
+    }
+
+    pub fn nodes(&self) -> impl Iterator<Item = &Node> {
+        self.nodes.keys()
     }
 
     pub fn relationships<'a>(
