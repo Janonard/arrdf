@@ -1,14 +1,14 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone, Eq)]
 pub struct Node {
-    referent: Rc<str>,
+    referent: Arc<str>,
 }
 
 impl<'a> From<&'a str> for Node {
     fn from(referent: &'a str) -> Self {
         Self {
-            referent: Rc::from(referent),
+            referent: Arc::from(referent),
         }
     }
 }
@@ -54,7 +54,7 @@ impl std::fmt::Debug for Node {
 impl Node {
     pub fn blank() -> Self {
         Self {
-            referent: Rc::from(""),
+            referent: Arc::from(""),
         }
     }
 
@@ -66,7 +66,7 @@ impl Node {
         self.referent.as_ref()
     }
 
-    pub fn internal(&self) -> &Rc<str> {
+    pub fn internal(&self) -> &Arc<str> {
         &self.referent
     }
 }
