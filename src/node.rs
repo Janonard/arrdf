@@ -120,4 +120,16 @@ mod tests {
         assert_eq!(node_c, map[&node_c]);
         assert_eq!(node_d, map[&node_d]);
     }
+
+    #[test]
+    fn formatting() {
+        let node = Node::from("Hello");
+        assert_eq!("Node \"Hello\"", format!("{:?}", node));
+
+        let node = Node::blank();
+        assert_eq!(
+            format!("Node <{:?}>", node.internal().as_ptr()),
+            format!("{:?}", node)
+        );
+    }
 }
