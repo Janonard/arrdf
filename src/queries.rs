@@ -9,16 +9,24 @@ impl HashGraph {
         self.nodes.keys()
     }
 
-    pub fn relationships<'a>(
+    pub fn relationships<'a, 'b>(
         &'a self,
         subject: &'a Node,
-    ) -> impl 'a + Iterator<Item = (&Node, &Node, &Node)> {
+    ) -> impl Iterator<Item = (&'a Node, &'a Node, &'a Node)> {
         self.nodes
             .get(subject)
             .into_iter()
             .map(|relationships| relationships.iter())
             .flatten()
             .map(move |(predicate, object)| (subject, predicate, object))
+    }
+
+    pub fn contains_triple(&self, subject: &Node, predicate: &Node, object: &Node) -> bool {
+        if let Some(relationships) = self.nodes.get(subject) {
+            relationships.contains(&(predicate.clone(), object.clone()))
+        } else {
+            false
+        }
     }
 
     pub fn triples(&self) -> impl Iterator<Item = (&Node, &Node, &Node)> {
@@ -36,13 +44,5 @@ impl HashGraph {
         self.triples()
             .find(|(subject, predicate, _)| subject.is_blank() || predicate.is_blank())
             .is_none()
-    }
-
-    pub fn contains_triple(&self, subject: &Node, predicate: &Node, object: &Node) -> bool {
-        if let Some(relationships) = self.nodes.get(subject) {
-            relationships.contains(&(predicate.clone(), object.clone()))
-        } else {
-            false
-        }
     }
 }

@@ -22,3 +22,25 @@ impl HashGraph {
         })
     }
 }
+
+impl std::iter::FromIterator<(Node, Node, Node)> for HashGraph {
+    fn from_iter<T>(iter: T) -> Self
+    where
+        T: IntoIterator<Item = (Node, Node, Node)>,
+    {
+        let mut graph = HashGraph::new();
+        graph.extend(iter);
+        graph
+    }
+}
+
+impl<'a> std::iter::FromIterator<(&'a Node, &'a Node, &'a Node)> for HashGraph {
+    fn from_iter<T>(iter: T) -> Self
+    where
+        T: IntoIterator<Item = (&'a Node, &'a Node, &'a Node)>,
+    {
+        let mut graph = HashGraph::new();
+        graph.extend(iter);
+        graph
+    }
+}

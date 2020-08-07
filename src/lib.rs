@@ -4,9 +4,10 @@ mod node;
 pub use node::Node;
 
 mod construction;
-mod queries;
-mod modifications;
 
+mod queries;
+
+mod modifications;
 
 #[cfg(test)]
 mod tests;

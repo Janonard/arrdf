@@ -25,3 +25,26 @@ impl HashGraph {
         self.retain(|subject, predicate, _| !subject.is_blank() && !predicate.is_blank())
     }
 }
+
+impl std::iter::Extend<(Node, Node, Node)> for HashGraph {
+    fn extend<T>(&mut self, iter: T)
+    where
+        T: IntoIterator<Item = (Node, Node, Node)>,
+    {
+        for (subject, predicate, object) in iter {
+            self.insert(subject, predicate, object);
+        }
+    }
+}
+
+impl<'a> std::iter::Extend<(&'a Node, &'a Node, &'a Node)> for HashGraph {
+    fn extend<T>(&mut self, iter: T)
+    where
+        T: IntoIterator<Item = (&'a Node, &'a Node, &'a Node)>,
+    {
+        self.extend(
+            iter.into_iter()
+                .map(|(s, p, o)| (s.clone(), p.clone(), o.clone())),
+        )
+    }
+}

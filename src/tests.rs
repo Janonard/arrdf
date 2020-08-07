@@ -218,3 +218,17 @@ fn retain() {
     assert_eq!(1, triples.len());
     assert!(triples.contains(&(&testbed.node_b, &testbed.predicate_b, &testbed.node_c)));
 }
+
+#[test]
+fn from_iter() {
+    let testbed = Testbed::new();
+    let other_graph: HashGraph = testbed.graph.triples().collect();
+    assert_eq!(testbed.graph, other_graph);
+
+    let other_graph: HashGraph = testbed
+        .graph
+        .triples()
+        .map(|(s, p, o)| (s.clone(), p.clone(), o.clone()))
+        .collect();
+    assert_eq!(testbed.graph, other_graph);
+}
