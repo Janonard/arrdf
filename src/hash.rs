@@ -1,4 +1,4 @@
-use crate::{Graph, Node};
+use crate::Node;
 use std::collections::{HashMap, HashSet};
 
 pub struct HashGraph {
@@ -43,15 +43,12 @@ impl HashGraph {
                 .map(move |(predicate, object)| (subject, predicate, object)),
         )
     }
-}
 
-impl<'a> Graph<'a> for HashGraph {
-    type TripleIter = HashTripleIter<'a>;
-    fn triples(&'a self) -> HashTripleIter<'a> {
+    pub fn triples(&self) -> HashTripleIter {
         HashTripleIter::new(self)
     }
 
-    fn contains_triple(&self, subject: &Node, predicate: &Node, object: &Node) -> bool {
+    pub fn contains_triple(&self, subject: &Node, predicate: &Node, object: &Node) -> bool {
         if let Some(relationships) = self.nodes.get(subject) {
             relationships.contains(&(predicate.clone(), object.clone()))
         } else {
@@ -59,14 +56,14 @@ impl<'a> Graph<'a> for HashGraph {
         }
     }
 
-    fn add_triple(&mut self, subject: Node, predicate: Node, object: Node) {
+    pub fn add_triple(&mut self, subject: Node, predicate: Node, object: Node) {
         self.nodes
             .entry(subject)
             .or_insert_with(|| HashSet::new())
             .insert((predicate, object));
     }
 
-    fn remove_triple(&mut self, subject: &Node, predicate: &Node, object: &Node) {
+    pub fn remove_triple(&mut self, subject: &Node, predicate: &Node, object: &Node) {
         if let Some(relationships) = self.nodes.get_mut(subject) {
             relationships.retain(|(p, o)| p != predicate || o != object);
         }
