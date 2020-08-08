@@ -1,5 +1,7 @@
-use iref::Iri;
 use std::sync::Arc;
+use iri_string::validate::iri;
+use iri_string::spec::IriSpec;
+use iri_string::types::IriStr;
 
 #[derive(Clone, Eq)]
 pub struct Node {
@@ -65,7 +67,7 @@ impl Node {
     }
 
     pub fn is_iri(&self) -> bool {
-        Iri::new(self.as_str()).is_ok()
+        iri::<IriSpec>(self.as_str()).is_ok()
     }
 
     pub fn is_literal(&self) -> bool {
@@ -76,8 +78,8 @@ impl Node {
         self.referent.as_ref()
     }
 
-    pub fn as_iri(&self) -> Result<Iri, iref::Error> {
-        Iri::new(self.as_str())
+    pub fn as_iri(&self) -> Result<&IriStr, iri_string::validate::Error> {
+        IriStr::new(self.as_str())
     }
 
     #[cfg(not(tarpaulin_include))]
