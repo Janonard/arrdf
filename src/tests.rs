@@ -170,9 +170,9 @@ fn triples() {
 fn is_valid_rdf() {
     let mut testbed = Testbed::new();
 
-    assert!(!testbed.graph.is_valid_rdf());
+    assert!(!testbed.graph.is_valid_graph());
     testbed.graph.sanitize();
-    assert!(testbed.graph.is_valid_rdf());
+    assert!(testbed.graph.is_valid_graph());
 }
 
 #[test]

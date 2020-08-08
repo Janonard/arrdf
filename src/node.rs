@@ -1,3 +1,4 @@
+use iref::Iri;
 use std::sync::Arc;
 
 #[derive(Clone, Eq)]
@@ -63,8 +64,20 @@ impl Node {
         self.referent.is_empty()
     }
 
+    pub fn is_iri(&self) -> bool {
+        Iri::new(self.as_str()).is_ok()
+    }
+
+    pub fn is_literal(&self) -> bool {
+        !self.is_iri()
+    }
+
     pub fn as_str(&self) -> &str {
         self.referent.as_ref()
+    }
+
+    pub fn as_iri(&self) -> Result<Iri, iref::Error> {
+        Iri::new(self.as_str())
     }
 
     #[cfg(not(tarpaulin_include))]

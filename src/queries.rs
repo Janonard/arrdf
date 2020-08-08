@@ -40,9 +40,9 @@ impl HashGraph {
             .flatten()
     }
 
-    pub fn is_valid_rdf(&self) -> bool {
+    pub fn is_valid_graph(&self) -> bool {
         self.triples()
-            .find(|(subject, predicate, _)| subject.is_blank() || predicate.is_blank())
+            .find(|(subject, predicate, _)| subject.is_literal() || !predicate.is_iri())
             .is_none()
     }
 }

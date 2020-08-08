@@ -22,7 +22,7 @@ impl HashGraph {
     }
 
     pub fn sanitize(&mut self) {
-        self.retain(|subject, predicate, _| !subject.is_blank() && !predicate.is_blank())
+        self.retain(|subject, predicate, _| !subject.is_literal() && predicate.is_iri())
     }
 }
 
