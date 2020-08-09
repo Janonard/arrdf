@@ -1,4 +1,5 @@
 use crate::*;
+use std::collections::HashMap;
 
 impl HashGraph {
     pub fn new() -> Self {
