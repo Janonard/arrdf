@@ -1,7 +1,7 @@
-use std::sync::Arc;
-use iri_string::validate::iri;
 use iri_string::spec::IriSpec;
 use iri_string::types::IriStr;
+use iri_string::validate::iri;
+use std::sync::Arc;
 
 #[derive(Clone, Eq)]
 pub struct Node {

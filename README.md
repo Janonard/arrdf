@@ -3,8 +3,8 @@ Arr! A rusty RDF triplestore
 
 ## TODO
 
-* Turtle parser
-* n-Triples parser
+* Turtle parsing
+* n-Triples parsing
 * Set operations
 * Cached queries
 * Transactions
