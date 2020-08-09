@@ -45,4 +45,36 @@ impl HashGraph {
             .find(|(subject, predicate, _)| subject.is_literal() || !predicate.is_iri())
             .is_none()
     }
+
+    pub fn difference<'a>(
+        &'a self,
+        other: &'a HashGraph,
+    ) -> impl 'a + Iterator<Item = (&Node, &Node, &Node)> {
+        self.triples()
+            .filter(move |(s, p, o)| !other.contains_triple(s, p, o))
+    }
+
+    pub fn symmetric_difference<'a>(&'a self, other: &'a HashGraph) -> impl 'a + Iterator<Item = (&Node, &Node, &Node)> {
+        self.difference(other).chain(other.difference(self))
+    }
+
+    pub fn intersection<'a>(&'a self, other: &'a HashGraph) -> impl 'a + Iterator<Item = (&Node, &Node, &Node)> {
+        self.triples().filter(move |(s, p, o)| other.contains_triple(s, p, o))
+    }
+
+    pub fn union<'a>(&'a self, other: &'a HashGraph) -> impl 'a + Iterator<Item = (&Node, &Node, &Node)> {
+        self.triples().chain(other.difference(self))
+    }
+
+    pub fn is_subset(&self, other: &HashGraph) -> bool {
+        self.triples().find(|(s, p, o)| !other.contains_triple(s, p, o)).is_none()
+    }
+
+    pub fn is_superset(&self, other: &HashGraph) -> bool {
+        other.is_subset(self)
+    }
+
+    pub fn is_disjoint(&self, other: &HashGraph) -> bool {
+        self.intersection(other).count() == 0
+    }
 }
