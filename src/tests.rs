@@ -99,6 +99,17 @@ impl Testbed {
 }
 
 #[test]
+fn len() {
+    let mut testbed = Testbed::new();
+    assert_eq!(3, testbed.graph.len());
+
+    testbed
+        .graph
+        .insert(testbed.node_a, testbed.predicate_a, testbed.node_c);
+    assert_eq!(4, testbed.graph.len());
+}
+
+#[test]
 fn contains_subject() {
     let testbed = Testbed::new();
 
@@ -231,4 +242,133 @@ fn from_iter() {
         .map(|(s, p, o)| (s.clone(), p.clone(), o.clone()))
         .collect();
     assert_eq!(testbed.graph, other_graph);
+}
+
+#[test]
+fn difference() {
+    let testbed = Testbed::new();
+
+    let a = testbed.graph;
+    let mut b = HashGraph::new();
+    b.insert(
+        testbed.node_a.clone(),
+        testbed.predicate_a.clone(),
+        testbed.node_b.clone(),
+    );
+    b.insert(
+        testbed.node_b.clone(),
+        testbed.predicate_a.clone(),
+        testbed.node_a.clone(),
+    );
+
+    let difference: HashGraph = a.difference(&b).collect();
+
+    assert_eq!(2, difference.len());
+    assert!(difference.contains_triple(&testbed.node_b, &testbed.predicate_b, &testbed.node_c));
+    assert!(difference.contains_triple(&testbed.node_c, &testbed.predicate_c, &testbed.node_a));
+}
+
+#[test]
+fn symmetric_difference() {
+    let testbed = Testbed::new();
+
+    let a = testbed.graph;
+    let mut b = HashGraph::new();
+    b.insert(
+        testbed.node_a.clone(),
+        testbed.predicate_a.clone(),
+        testbed.node_b.clone(),
+    );
+    b.insert(
+        testbed.node_b.clone(),
+        testbed.predicate_a.clone(),
+        testbed.node_a.clone(),
+    );
+
+    let difference: HashGraph = a.symmetric_difference(&b).collect();
+
+    assert_eq!(3, difference.len());
+    assert!(difference.contains_triple(&testbed.node_b, &testbed.predicate_b, &testbed.node_c));
+    assert!(difference.contains_triple(&testbed.node_c, &testbed.predicate_c, &testbed.node_a));
+    assert!(difference.contains_triple(&testbed.node_b, &testbed.predicate_a, &testbed.node_a));
+}
+
+#[test]
+fn union() {
+    let testbed = Testbed::new();
+
+    let a = testbed.graph;
+    let mut b = HashGraph::new();
+    b.insert(
+        testbed.node_a.clone(),
+        testbed.predicate_a.clone(),
+        testbed.node_b.clone(),
+    );
+    b.insert(
+        testbed.node_b.clone(),
+        testbed.predicate_a.clone(),
+        testbed.node_a.clone(),
+    );
+
+    let union: HashGraph = a.union(&b).collect();
+
+    assert_eq!(4, union.len());
+    assert!(union.contains_triple(&testbed.node_a, &testbed.predicate_a, &testbed.node_b));
+    assert!(union.contains_triple(&testbed.node_b, &testbed.predicate_b, &testbed.node_c));
+    assert!(union.contains_triple(&testbed.node_c, &testbed.predicate_c, &testbed.node_a));
+    assert!(union.contains_triple(&testbed.node_b, &testbed.predicate_a, &testbed.node_a));
+}
+
+#[test]
+fn is_subset_superset() {
+    let testbed = Testbed::new();
+
+    let a = testbed.graph;
+    let mut b = HashGraph::new();
+    b.insert(
+        testbed.node_a.clone(),
+        testbed.predicate_a.clone(),
+        testbed.node_b.clone(),
+    );
+    b.insert(
+        testbed.node_b.clone(),
+        testbed.predicate_a.clone(),
+        testbed.node_a.clone(),
+    );
+
+    assert!(a.is_subset(&a));
+    assert!(a.is_superset(&a));
+
+    assert!(!b.is_subset(&a));
+    assert!(!a.is_subset(&b));
+
+    b.remove(&testbed.node_b, &testbed.predicate_a, &testbed.node_a);
+
+    assert!(b.is_subset(&a));
+    assert!(a.is_superset(&b));
+}
+
+#[test]
+fn is_disjoint() {
+    let testbed = Testbed::new();
+
+    let a = testbed.graph;
+    let mut b = HashGraph::new();
+    b.insert(
+        testbed.node_a.clone(),
+        testbed.predicate_a.clone(),
+        testbed.node_b.clone(),
+    );
+    b.insert(
+        testbed.node_b.clone(),
+        testbed.predicate_a.clone(),
+        testbed.node_a.clone(),
+    );
+
+    assert!(!a.is_disjoint(&a));
+    assert!(!a.is_disjoint(&b));
+
+    b.remove(&testbed.node_a, &testbed.predicate_a, &testbed.node_b);
+
+    assert!(a.is_disjoint(&b));
 }
