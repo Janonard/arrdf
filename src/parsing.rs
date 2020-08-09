@@ -1,11 +1,12 @@
+use nom::branch::*;
 use nom::character::streaming::*;
 use nom::multi::*;
 use nom::sequence::*;
 use nom::IResult;
 use std::convert::TryFrom;
-use nom::branch::*;
+use nom::bytes::streaming::*;
 
-fn hex_char(i: &str) -> IResult<&str, u32> {
+fn hex(i: &str) -> IResult<&str, u32> {
     let (i, c) = one_of("0123456789abcdefABCDEF")(i)?;
     match c {
         '0' => Ok((i, 0)),
@@ -29,17 +30,17 @@ fn hex_char(i: &str) -> IResult<&str, u32> {
 }
 
 #[test]
-fn test_hex_char() {
-    assert_eq!(("abc", 15), hex_char("fabc").unwrap());
-    assert_eq!(("abc", 15), hex_char("Fabc").unwrap());
+fn test_hex() {
+    assert_eq!(("abc", 15), hex("fabc").unwrap());
+    assert_eq!(("abc", 15), hex("Fabc").unwrap());
     assert_eq!(
         nom::Err::Error(("gabc", nom::error::ErrorKind::OneOf)),
-        hex_char("gabc").unwrap_err()
+        hex("gabc").unwrap_err()
     );
 }
 
 fn u16_char(i: &str) -> IResult<&str, char> {
-    let (i, (_, _, c)) = tuple((char('\\'), char('u'), count(hex_char, 4)))(i)?;
+    let (i, (_, _, c)) = tuple((char('\\'), char('u'), count(hex, 4)))(i)?;
 
     let c = char::try_from(c[0] * 0x1000 + c[1] * 0x0100 + c[2] * 0x0010 + c[3]).unwrap();
     Ok((i, c))
@@ -56,7 +57,7 @@ fn test_u16_char() {
 }
 
 fn u32_char(i: &str) -> IResult<&str, char> {
-    let (i, (_, _, c)) = tuple((char('\\'), char('U'), count(hex_char, 8)))(i)?;
+    let (i, (_, _, c)) = tuple((char('\\'), char('U'), count(hex, 8)))(i)?;
 
     let c = c[0] * 0x10000000
         + c[1] * 0x01000000
@@ -94,6 +95,12 @@ fn iriref(i: &str) -> IResult<&str, String> {
 
 #[test]
 fn test_iriref() {
-    assert_eq!(("abc", String::from("https://google.com")), iriref("<https://google.com>abc").unwrap());
-    assert_eq!(("abc", String::from("https://duckduckgo.com/?q=Übung")), iriref(r"<https://duckduckgo.com/?q=\u00DCbung>abc").unwrap());
+    assert_eq!(
+        ("abc", String::from("https://google.com")),
+        iriref("<https://google.com>abc").unwrap()
+    );
+    assert_eq!(
+        ("abc", String::from("https://duckduckgo.com/?q=Übung")),
+        iriref(r"<https://duckduckgo.com/?q=\u00DCbung>abc").unwrap()
+    );
 }
