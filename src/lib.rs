@@ -1,6 +1,7 @@
 mod hash_graph;
 mod node;
 pub mod set;
+pub mod transaction;
 
 pub use hash_graph::HashGraph;
 pub use node::Node;
@@ -36,6 +37,16 @@ pub trait Graph {
         for (s, p, o) in iter {
             self.insert(s.clone(), p.clone(), o.clone());
         }
+    }
+
+    fn clone_extend<'a, G>(&mut self, iter: G)
+    where
+        G: 'a + IntoIterator<Item = (&'a Node, &'a Node, &'a Node)>,
+    {
+        self.extend(
+            iter.into_iter()
+                .map(|(s, p, o)| (s.clone(), p.clone(), o.clone())),
+        )
     }
 
     fn remove(&mut self, subject: &Node, predicate: &Node, object: &Node);
