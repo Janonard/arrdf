@@ -8,7 +8,6 @@ pub use hash_graph::HashGraph;
 pub trait Graph<'a> {
     fn len(&self) -> usize;
 
-    #[cfg(not(tarpaulin_include))]
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -26,7 +25,6 @@ pub trait Graph<'a> {
 
     fn insert(&mut self, subject: Node, predicate: Node, object: Node);
 
-    #[cfg(not(tarpaulin_include))]
     fn clone_insert(&mut self, subject: &Node, predicate: &Node, object: &Node) {
         self.insert(subject.clone(), predicate.clone(), object.clone());
     }
@@ -42,7 +40,6 @@ pub trait Graph<'a> {
 
     fn remove(&mut self, subject: &Node, predicate: &Node, object: &Node);
 
-    #[cfg(not(tarpaulin_include))]
     fn remove_all<G>(&mut self, iter: G)
     where
         G: IntoIterator<Item = (&'a Node, &'a Node, &'a Node)>,
