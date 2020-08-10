@@ -16,11 +16,10 @@ pub trait Graph {
 
     fn contains_triple(&self, subject: &Node, predicate: &Node, object: &Node) -> bool;
 
-    fn triples<'a>(&'a self) -> Box<dyn 'a + Iterator<Item = (&'a Node, &'a Node, &'a Node)>>;
+    fn iter<'a>(&'a self) -> Box<dyn 'a + Iterator<Item = (&'a Node, &'a Node, &'a Node)>>;
 
     fn is_valid_graph(&self) -> bool {
-        self.triples()
-            .all(|(s, p, _)| !s.is_literal() && p.is_iri())
+        self.iter().all(|(s, p, _)| !s.is_literal() && p.is_iri())
     }
 
     fn insert(&mut self, subject: Node, predicate: Node, object: Node);

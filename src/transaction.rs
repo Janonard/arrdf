@@ -83,8 +83,8 @@ impl<'a, G: Graph> MutTransaction<'a, G> {
     }
 
     fn is_valid(&self) -> bool {
-        set::is_subset(&self.removed_triples, &self.guard.graph) &&
-        set::is_disjoint(&self.guard.graph, &self.added_triples)
+        set::is_subset(&self.removed_triples, &self.guard.graph)
+            && set::is_disjoint(&self.guard.graph, &self.added_triples)
     }
 
     pub fn commit(mut self) {
@@ -92,8 +92,8 @@ impl<'a, G: Graph> MutTransaction<'a, G> {
             assert!(self.is_valid());
         }
 
-        self.guard.graph.remove_all(self.removed_triples.triples());
-        self.guard.graph.clone_extend(self.added_triples.triples());
+        self.guard.graph.remove_all(self.removed_triples.iter());
+        self.guard.graph.extend(self.added_triples.into_iter());
     }
 }
 
@@ -118,10 +118,10 @@ impl<'a, G: Graph> Graph for MutTransaction<'a, G> {
         }
     }
 
-    fn triples<'b>(&'b self) -> Box<dyn Iterator<Item = (&'b Node, &'b Node, &'b Node)> + 'b> {
+    fn iter<'b>(&'b self) -> Box<dyn Iterator<Item = (&'b Node, &'b Node, &'b Node)> + 'b> {
         Box::new(
             set::difference(&self.guard.graph, &self.removed_triples)
-                .chain(self.added_triples.triples()),
+                .chain(self.added_triples.iter()),
         )
     }
 
@@ -160,9 +160,8 @@ impl<'a, G: Graph> Graph for MutTransaction<'a, G> {
     where
         F: FnMut(&Node, &Node, &Node) -> bool,
     {
-        let newly_removed_triples: HashGraph =
-            self.triples().filter(|(s, p, o)| f(s, p, o)).collect();
-        self.remove_all(newly_removed_triples.triples());
+        let newly_removed_triples: HashGraph = self.iter().filter(|(s, p, o)| f(s, p, o)).collect();
+        self.remove_all(newly_removed_triples.iter());
 
         if cfg!(test) {
             assert!(self.is_valid());

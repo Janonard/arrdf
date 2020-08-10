@@ -12,14 +12,14 @@ fn len() {
 }
 
 #[test]
-fn triples() {
+fn iter() {
     let testbed = Testbed::new();
 
-    let triples: Vec<(&Node, &Node, &Node)> = testbed.graph.triples().collect();
-    assert_eq!(3, triples.len());
-    assert!(triples.contains(&(&testbed.node_a, &testbed.predicate_a, &testbed.node_b)));
-    assert!(triples.contains(&(&testbed.node_b, &testbed.predicate_b, &testbed.node_c)));
-    assert!(triples.contains(&(&testbed.node_c, &testbed.predicate_c, &testbed.node_a)));
+    let iter: Vec<(&Node, &Node, &Node)> = testbed.graph.iter().collect();
+    assert_eq!(3, iter.len());
+    assert!(iter.contains(&(&testbed.node_a, &testbed.predicate_a, &testbed.node_b)));
+    assert!(iter.contains(&(&testbed.node_b, &testbed.predicate_b, &testbed.node_c)));
+    assert!(iter.contains(&(&testbed.node_c, &testbed.predicate_c, &testbed.node_a)));
 }
 
 #[test]
@@ -58,10 +58,10 @@ fn remove() {
         .graph
         .remove(&testbed.node_c, &testbed.predicate_c, &testbed.node_a);
 
-    let triples: Vec<(&Node, &Node, &Node)> = testbed.graph.triples().collect();
-    assert_eq!(2, triples.len());
-    assert!(triples.contains(&(&testbed.node_a, &testbed.predicate_a, &testbed.node_b)));
-    assert!(triples.contains(&(&testbed.node_b, &testbed.predicate_b, &testbed.node_c)));
+    let iter: Vec<(&Node, &Node, &Node)> = testbed.graph.iter().collect();
+    assert_eq!(2, iter.len());
+    assert!(iter.contains(&(&testbed.node_a, &testbed.predicate_a, &testbed.node_b)));
+    assert!(iter.contains(&(&testbed.node_b, &testbed.predicate_b, &testbed.node_c)));
 }
 
 #[test]
@@ -70,20 +70,20 @@ fn retain() {
 
     testbed.graph.retain(|_, _, object| object.is_blank());
 
-    let triples: Vec<(&Node, &Node, &Node)> = testbed.graph.triples().collect();
-    assert_eq!(1, triples.len());
-    assert!(triples.contains(&(&testbed.node_b, &testbed.predicate_b, &testbed.node_c)));
+    let iter: Vec<(&Node, &Node, &Node)> = testbed.graph.iter().collect();
+    assert_eq!(1, iter.len());
+    assert!(iter.contains(&(&testbed.node_b, &testbed.predicate_b, &testbed.node_c)));
 }
 
 #[test]
 fn from_iter() {
     let testbed = Testbed::new();
-    let other_graph: HashGraph = testbed.graph.triples().collect();
+    let other_graph: HashGraph = testbed.graph.iter().collect();
     assert_eq!(testbed.graph, other_graph);
 
     let other_graph: HashGraph = testbed
         .graph
-        .triples()
+        .iter()
         .map(|(s, p, o)| (s.clone(), p.clone(), o.clone()))
         .collect();
     assert_eq!(testbed.graph, other_graph);

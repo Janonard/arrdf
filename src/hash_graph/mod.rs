@@ -53,7 +53,7 @@ impl Graph for HashGraph {
         }
     }
 
-    fn triples<'a>(&'a self) -> Box<dyn 'a + Iterator<Item = (&'a Node, &'a Node, &'a Node)>> {
+    fn iter<'a>(&'a self) -> Box<dyn 'a + Iterator<Item = (&'a Node, &'a Node, &'a Node)>> {
         Box::new(
             self.nodes
                 .iter()
@@ -104,5 +104,19 @@ impl<'a> std::iter::FromIterator<(&'a Node, &'a Node, &'a Node)> for HashGraph {
                 .map(|(s, p, o)| (s.clone(), p.clone(), o.clone())),
         );
         graph
+    }
+}
+
+impl std::iter::IntoIterator for HashGraph {
+    type Item = (Node, Node, Node);
+    type IntoIter = Box<dyn Iterator<Item = (Node, Node, Node)>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Box::new(
+            self.nodes
+                .into_iter()
+                .map(|(s, rels)| rels.into_iter().map(move |(p, o)| (s.clone(), p, o)))
+                .flatten(),
+        )
     }
 }

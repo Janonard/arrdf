@@ -8,7 +8,7 @@ where
     G: Graph,
     H: Graph,
 {
-    lhs.triples()
+    lhs.iter()
         .filter(move |(s, p, o)| !rhs.contains_triple(s, p, o))
 }
 
@@ -31,7 +31,7 @@ where
     G: Graph,
     H: Graph,
 {
-    lhs.triples()
+    lhs.iter()
         .filter(move |(s, p, o)| rhs.contains_triple(s, p, o))
 }
 
@@ -43,7 +43,7 @@ where
     G: Graph,
     H: Graph,
 {
-    lhs.triples().chain(difference(rhs, lhs))
+    lhs.iter().chain(difference(rhs, lhs))
 }
 
 pub fn is_subset<'a, G, H>(lhs: &'a G, rhs: &'a H) -> bool
@@ -51,7 +51,7 @@ where
     G: Graph,
     H: Graph,
 {
-    lhs.triples().all(|(s, p, o)| rhs.contains_triple(s, p, o))
+    lhs.iter().all(|(s, p, o)| rhs.contains_triple(s, p, o))
 }
 
 pub fn is_superset<'a, G, H>(lhs: &'a G, rhs: &'a H) -> bool
