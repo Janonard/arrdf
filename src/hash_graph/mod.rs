@@ -32,33 +32,7 @@ impl HashGraph {
     }
 }
 
-pub struct TripleIter<'a> {
-    internal: Box<dyn 'a + Iterator<Item = (&'a Node, &'a Node, &'a Node)>>,
-}
-
-impl<'a> TripleIter<'a> {
-    fn new(graph: &'a HashGraph) -> Self {
-        Self {
-            internal: Box::new(
-                graph
-                    .nodes
-                    .iter()
-                    .map(|(s, rels)| rels.iter().map(move |(p, o)| (s, p, o)))
-                    .flatten(),
-            ),
-        }
-    }
-}
-
-impl<'a> Iterator for TripleIter<'a> {
-    type Item = (&'a Node, &'a Node, &'a Node);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.internal.next()
-    }
-}
-
-impl<'a> Graph<'a> for HashGraph {
+impl Graph for HashGraph {
     fn len(&self) -> usize {
         self.nodes.iter().map(|(_, r)| r.len()).sum()
     }
@@ -79,10 +53,13 @@ impl<'a> Graph<'a> for HashGraph {
         }
     }
 
-    type TripleIter = TripleIter<'a>;
-
-    fn triples(&'a self) -> TripleIter<'a> {
-        TripleIter::new(self)
+    fn triples<'a>(&'a self) -> Box<dyn 'a + Iterator<Item = (&'a Node, &'a Node, &'a Node)>> {
+        Box::new(
+            self.nodes
+                .iter()
+                .map(|(s, rels)| rels.iter().map(move |(p, o)| (s, p, o)))
+                .flatten(),
+        )
     }
 
     fn insert(&mut self, subject: Node, predicate: Node, object: Node) {

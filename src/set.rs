@@ -5,8 +5,8 @@ pub fn difference<'a, G, H>(
     rhs: &'a H,
 ) -> impl 'a + Iterator<Item = (&'a Node, &'a Node, &'a Node)>
 where
-    G: Graph<'a>,
-    H: Graph<'a>,
+    G: Graph,
+    H: Graph,
 {
     lhs.triples()
         .filter(move |(s, p, o)| !rhs.contains_triple(s, p, o))
@@ -17,8 +17,8 @@ pub fn symmetric_difference<'a, G, H>(
     rhs: &'a H,
 ) -> impl 'a + Iterator<Item = (&'a Node, &'a Node, &'a Node)>
 where
-    G: Graph<'a>,
-    H: Graph<'a>,
+    G: Graph,
+    H: Graph,
 {
     difference(lhs, rhs).chain(difference(rhs, lhs))
 }
@@ -28,8 +28,8 @@ pub fn intersection<'a, G, H>(
     rhs: &'a H,
 ) -> impl 'a + Iterator<Item = (&'a Node, &'a Node, &'a Node)>
 where
-    G: Graph<'a>,
-    H: Graph<'a>,
+    G: Graph,
+    H: Graph,
 {
     lhs.triples()
         .filter(move |(s, p, o)| rhs.contains_triple(s, p, o))
@@ -40,32 +40,32 @@ pub fn union<'a, G, H>(
     rhs: &'a H,
 ) -> impl 'a + Iterator<Item = (&'a Node, &'a Node, &'a Node)>
 where
-    G: Graph<'a>,
-    H: Graph<'a>,
+    G: Graph,
+    H: Graph,
 {
     lhs.triples().chain(difference(rhs, lhs))
 }
 
 pub fn is_subset<'a, G, H>(lhs: &'a G, rhs: &'a H) -> bool
 where
-    G: Graph<'a>,
-    H: Graph<'a>,
+    G: Graph,
+    H: Graph,
 {
     lhs.triples().all(|(s, p, o)| rhs.contains_triple(s, p, o))
 }
 
 pub fn is_superset<'a, G, H>(lhs: &'a G, rhs: &'a H) -> bool
 where
-    G: Graph<'a>,
-    H: Graph<'a>,
+    G: Graph,
+    H: Graph,
 {
     is_subset(rhs, lhs)
 }
 
 pub fn is_disjoint<'a, G, H>(lhs: &'a G, rhs: &'a H) -> bool
 where
-    G: Graph<'a>,
-    H: Graph<'a>,
+    G: Graph,
+    H: Graph,
 {
     intersection(lhs, rhs).next().is_none()
 }

@@ -1,11 +1,11 @@
+mod hash_graph;
 mod node;
-pub mod hash_graph;
 pub mod set;
 
-pub use node::Node;
 pub use hash_graph::HashGraph;
+pub use node::Node;
 
-pub trait Graph<'a> {
+pub trait Graph {
     fn len(&self) -> usize;
 
     #[cfg(not(tarpaulin_include))]
@@ -15,11 +15,9 @@ pub trait Graph<'a> {
 
     fn contains_triple(&self, subject: &Node, predicate: &Node, object: &Node) -> bool;
 
-    type TripleIter: 'a + Iterator<Item = (&'a Node, &'a Node, &'a Node)>;
+    fn triples<'a>(&'a self) -> Box<dyn 'a + Iterator<Item = (&'a Node, &'a Node, &'a Node)>>;
 
-    fn triples(&'a self) -> Self::TripleIter;
-
-    fn is_valid_graph(&'a self) -> bool {
+    fn is_valid_graph(&self) -> bool {
         self.triples()
             .all(|(s, p, _)| !s.is_literal() && p.is_iri())
     }
@@ -43,7 +41,7 @@ pub trait Graph<'a> {
     fn remove(&mut self, subject: &Node, predicate: &Node, object: &Node);
 
     #[cfg(not(tarpaulin_include))]
-    fn remove_all<G>(&mut self, iter: G)
+    fn remove_all<'a, G>(&mut self, iter: G)
     where
         G: IntoIterator<Item = (&'a Node, &'a Node, &'a Node)>,
     {
