@@ -32,22 +32,22 @@ fn is_valid_rdf() {
 }
 
 #[test]
-fn contains_triple() {
+fn contains() {
     let testbed = Testbed::new();
 
     assert!(testbed
         .graph
-        .contains_triple(&testbed.node_a, &testbed.predicate_a, &testbed.node_b));
+        .contains(&testbed.node_a, &testbed.predicate_a, &testbed.node_b));
     assert!(testbed
         .graph
-        .contains_triple(&testbed.node_b, &testbed.predicate_b, &testbed.node_c));
+        .contains(&testbed.node_b, &testbed.predicate_b, &testbed.node_c));
     assert!(testbed
         .graph
-        .contains_triple(&testbed.node_c, &testbed.predicate_c, &testbed.node_a));
+        .contains(&testbed.node_c, &testbed.predicate_c, &testbed.node_a));
 
     assert!(!testbed
         .graph
-        .contains_triple(&testbed.node_a, &testbed.predicate_b, &testbed.node_b));
+        .contains(&testbed.node_a, &testbed.predicate_b, &testbed.node_b));
 }
 
 #[test]

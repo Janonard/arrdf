@@ -14,7 +14,7 @@ pub trait Graph {
         self.len() == 0
     }
 
-    fn contains_triple(&self, subject: &Node, predicate: &Node, object: &Node) -> bool;
+    fn contains(&self, subject: &Node, predicate: &Node, object: &Node) -> bool;
 
     fn iter<'a>(&'a self) -> Box<dyn 'a + Iterator<Item = (&'a Node, &'a Node, &'a Node)>>;
 

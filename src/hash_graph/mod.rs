@@ -45,7 +45,7 @@ impl Graph for HashGraph {
         }
     }
 
-    fn contains_triple(&self, subject: &Node, predicate: &Node, object: &Node) -> bool {
+    fn contains(&self, subject: &Node, predicate: &Node, object: &Node) -> bool {
         if let Some(relationships) = self.nodes.get(subject) {
             relationships.contains(&(predicate.clone(), object.clone()))
         } else {

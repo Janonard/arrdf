@@ -5,3 +5,4 @@ Arr! A rusty RDF triplestore
 
 * Turtle parsing
 * n-Triples parsing
+* Literal parsing?

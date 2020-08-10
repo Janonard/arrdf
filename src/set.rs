@@ -8,8 +8,7 @@ where
     G: Graph,
     H: Graph,
 {
-    lhs.iter()
-        .filter(move |(s, p, o)| !rhs.contains_triple(s, p, o))
+    lhs.iter().filter(move |(s, p, o)| !rhs.contains(s, p, o))
 }
 
 pub fn symmetric_difference<'a, G, H>(
@@ -31,8 +30,7 @@ where
     G: Graph,
     H: Graph,
 {
-    lhs.iter()
-        .filter(move |(s, p, o)| rhs.contains_triple(s, p, o))
+    lhs.iter().filter(move |(s, p, o)| rhs.contains(s, p, o))
 }
 
 pub fn union<'a, G, H>(
@@ -51,7 +49,7 @@ where
     G: Graph,
     H: Graph,
 {
-    lhs.iter().all(|(s, p, o)| rhs.contains_triple(s, p, o))
+    lhs.iter().all(|(s, p, o)| rhs.contains(s, p, o))
 }
 
 pub fn is_superset<'a, G, H>(lhs: &'a G, rhs: &'a H) -> bool
@@ -94,8 +92,8 @@ mod tests {
         let difference: HashGraph = set::difference(&a, &b).collect();
 
         assert_eq!(2, difference.len());
-        assert!(difference.contains_triple(&testbed.node_b, &testbed.predicate_b, &testbed.node_c));
-        assert!(difference.contains_triple(&testbed.node_c, &testbed.predicate_c, &testbed.node_a));
+        assert!(difference.contains(&testbed.node_b, &testbed.predicate_b, &testbed.node_c));
+        assert!(difference.contains(&testbed.node_c, &testbed.predicate_c, &testbed.node_a));
     }
 
     #[test]
@@ -118,9 +116,9 @@ mod tests {
         let difference: HashGraph = set::symmetric_difference(&a, &b).collect();
 
         assert_eq!(3, difference.len());
-        assert!(difference.contains_triple(&testbed.node_b, &testbed.predicate_b, &testbed.node_c));
-        assert!(difference.contains_triple(&testbed.node_c, &testbed.predicate_c, &testbed.node_a));
-        assert!(difference.contains_triple(&testbed.node_b, &testbed.predicate_a, &testbed.node_a));
+        assert!(difference.contains(&testbed.node_b, &testbed.predicate_b, &testbed.node_c));
+        assert!(difference.contains(&testbed.node_c, &testbed.predicate_c, &testbed.node_a));
+        assert!(difference.contains(&testbed.node_b, &testbed.predicate_a, &testbed.node_a));
     }
 
     #[test]
@@ -143,10 +141,10 @@ mod tests {
         let union: HashGraph = set::union(&a, &b).collect();
 
         assert_eq!(4, union.len());
-        assert!(union.contains_triple(&testbed.node_a, &testbed.predicate_a, &testbed.node_b));
-        assert!(union.contains_triple(&testbed.node_b, &testbed.predicate_b, &testbed.node_c));
-        assert!(union.contains_triple(&testbed.node_c, &testbed.predicate_c, &testbed.node_a));
-        assert!(union.contains_triple(&testbed.node_b, &testbed.predicate_a, &testbed.node_a));
+        assert!(union.contains(&testbed.node_a, &testbed.predicate_a, &testbed.node_b));
+        assert!(union.contains(&testbed.node_b, &testbed.predicate_b, &testbed.node_c));
+        assert!(union.contains(&testbed.node_c, &testbed.predicate_c, &testbed.node_a));
+        assert!(union.contains(&testbed.node_b, &testbed.predicate_a, &testbed.node_a));
     }
 
     #[test]

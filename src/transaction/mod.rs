@@ -1,6 +1,9 @@
 use crate::{set, Graph, HashGraph, Node};
 use std::ops::Deref;
-use std::sync::{Arc, RwLock, RwLockWriteGuard};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard, TryLockError};
+
+#[cfg(test)]
+mod tests;
 
 pub struct TransactionGraph<G> {
     graph: Arc<RwLock<IntTransactionGraph<G>>>,
@@ -21,36 +24,46 @@ impl<G: Graph> TransactionGraph<G> {
         }
     }
 
-    pub fn transaction(&mut self) -> Option<Transaction<G>> {
-        self.graph.write().map(|guard| Transaction::new(guard)).ok()
-    }
-
-    pub fn try_transaction(&mut self) -> Option<Transaction<G>> {
+    pub fn transaction(&self) -> Transaction<G> {
         self.graph
-            .try_write()
+            .write()
             .map(|guard| Transaction::new(guard))
-            .ok()
+            .unwrap()
     }
 
-    pub fn query<T, Q: FnOnce(&G) -> T>(&self, query: Q) -> Option<T> {
-        if let Ok(guard) = self.graph.read() {
-            Some(query(&guard.graph))
-        } else {
-            None
+    pub fn try_transaction(&self) -> Option<Transaction<G>> {
+        match self.graph.try_write() {
+            Ok(guard) => Some(Transaction::new(guard)),
+            Err(TryLockError::WouldBlock) => None,
+            #[cfg(not(tarpaulin_include))]
+            _ => panic!("An active transaction panicked (Graph is poisoned)"),
         }
     }
 
-    pub fn cached_query<T, Q: FnMut(&G) -> T>(&self, mut query: Q) -> Option<CachedQuery<T, G, Q>> {
-        if let Ok(guard) = self.graph.read() {
-            let result = query(&guard.graph);
-            Some(CachedQuery {
-                graph: self.clone(),
-                query,
-                result,
-                current_revision: guard.revision,
-            })
-        } else {
-            None
+    pub fn query<T, Q: FnOnce(&G) -> T>(&self, query: Q) -> T {
+        query(&self.graph.read().unwrap().graph)
+    }
+
+    pub fn try_query<T, Q: FnOnce(&G) -> T>(&self, query: Q) -> Option<T> {
+        match self.graph.try_read() {
+            Ok(guard) => Some(query(&guard.graph)),
+            Err(TryLockError::WouldBlock) => None,
+            #[cfg(not(tarpaulin_include))]
+            _ => panic!("An active transaction panicked (Graph is poisoned)"),
+        }
+    }
+
+    pub fn cached_query<T, Q: FnMut(&G) -> T>(&self, query: Q) -> CachedQuery<T, G, Q> {
+        let guard = self.graph.read().unwrap();
+        CachedQuery::new(self.clone(), guard, query)
+    }
+
+    pub fn try_cached_query<T, Q: FnMut(&G) -> T>(&self, query: Q) -> Option<CachedQuery<T, G, Q>> {
+        match self.graph.try_read() {
+            Ok(guard) => Some(CachedQuery::new(self.clone(), guard, query)),
+            Err(TryLockError::WouldBlock) => None,
+            #[cfg(not(tarpaulin_include))]
+            _ => panic!("An active transaction panicked (Graph is poisoned)"),
         }
     }
 }
@@ -71,6 +84,21 @@ pub struct CachedQuery<T, G, Q> {
     query: Q,
     result: T,
     current_revision: usize,
+}
+
+impl<T, G, Q: FnMut(&G) -> T> CachedQuery<T, G, Q> {
+    fn new(
+        graph: TransactionGraph<G>,
+        guard: RwLockReadGuard<IntTransactionGraph<G>>,
+        mut query: Q,
+    ) -> Self {
+        Self {
+            graph,
+            result: query(&guard.graph),
+            query,
+            current_revision: guard.revision,
+        }
+    }
 }
 
 impl<T, G: Graph, Q: FnMut(&G) -> T> CachedQuery<T, G, Q> {
@@ -128,19 +156,13 @@ impl<'a, G: Graph> Graph for Transaction<'a, G> {
         self.guard.graph.len() + self.added_triples.len() - self.removed_triples.len()
     }
 
-    fn contains_triple(&self, subject: &Node, predicate: &Node, object: &Node) -> bool {
-        if self
-            .added_triples
-            .contains_triple(subject, predicate, object)
-        {
+    fn contains(&self, subject: &Node, predicate: &Node, object: &Node) -> bool {
+        if self.added_triples.contains(subject, predicate, object) {
             true
-        } else if self
-            .removed_triples
-            .contains_triple(subject, predicate, object)
-        {
+        } else if self.removed_triples.contains(subject, predicate, object) {
             false
         } else {
-            self.guard.graph.contains_triple(subject, predicate, object)
+            self.guard.graph.contains(subject, predicate, object)
         }
     }
 
@@ -152,10 +174,7 @@ impl<'a, G: Graph> Graph for Transaction<'a, G> {
     }
 
     fn insert(&mut self, subject: Node, predicate: Node, object: Node) {
-        if self
-            .removed_triples
-            .contains_triple(&subject, &predicate, &object)
-        {
+        if self.removed_triples.contains(&subject, &predicate, &object) {
             self.removed_triples.remove(&subject, &predicate, &object)
         } else {
             self.added_triples.insert(subject, predicate, object);
@@ -167,10 +186,7 @@ impl<'a, G: Graph> Graph for Transaction<'a, G> {
     }
 
     fn remove(&mut self, subject: &Node, predicate: &Node, object: &Node) {
-        if self
-            .added_triples
-            .contains_triple(&subject, &predicate, &object)
-        {
+        if self.added_triples.contains(&subject, &predicate, &object) {
             self.added_triples.remove(&subject, &predicate, &object)
         } else {
             self.removed_triples
