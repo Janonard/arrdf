@@ -1,9 +1,17 @@
 use crate::{set, Graph, HashGraph, Node};
 use std::ops::Deref;
-use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::sync::{Arc, RwLock, RwLockWriteGuard};
 
-pub struct TransactionGraph<G: Graph> {
+pub struct TransactionGraph<G> {
     graph: Arc<RwLock<IntTransactionGraph<G>>>,
+}
+
+impl<G> Clone for TransactionGraph<G> {
+    fn clone(&self) -> Self {
+        Self {
+            graph: self.graph.clone(),
+        }
+    }
 }
 
 impl<G: Graph> TransactionGraph<G> {
@@ -13,69 +21,86 @@ impl<G: Graph> TransactionGraph<G> {
         }
     }
 
-    pub fn transaction(&self) -> Option<Transaction<G>> {
-        self.graph.read().map(|guard| Transaction::new(guard)).ok()
+    pub fn transaction(&mut self) -> Option<Transaction<G>> {
+        self.graph.write().map(|guard| Transaction::new(guard)).ok()
     }
 
-    pub fn try_transaction(&self) -> Option<Transaction<G>> {
-        self.graph
-            .try_read()
-            .map(|guard| Transaction { guard })
-            .ok()
-    }
-
-    pub fn mut_transaction(&mut self) -> Option<MutTransaction<G>> {
-        self.graph
-            .write()
-            .map(|guard| MutTransaction::new(guard))
-            .ok()
-    }
-
-    pub fn try_mut_transaction(&mut self) -> Option<MutTransaction<G>> {
+    pub fn try_transaction(&mut self) -> Option<Transaction<G>> {
         self.graph
             .try_write()
-            .map(|guard| MutTransaction::new(guard))
+            .map(|guard| Transaction::new(guard))
             .ok()
     }
+
+    pub fn query<T, Q: FnOnce(&G) -> T>(&self, query: Q) -> Option<T> {
+        if let Ok(guard) = self.graph.read() {
+            Some(query(&guard.graph))
+        } else {
+            None
+        }
+    }
+
+    pub fn cached_query<T, Q: FnMut(&G) -> T>(&self, mut query: Q) -> Option<CachedQuery<T, G, Q>> {
+        if let Ok(guard) = self.graph.read() {
+            let result = query(&guard.graph);
+            Some(CachedQuery {
+                graph: self.clone(),
+                query,
+                result,
+                current_revision: guard.revision,
+            })
+        } else {
+            None
+        }
+    }
 }
 
-struct IntTransactionGraph<G: Graph> {
+struct IntTransactionGraph<G> {
     graph: G,
+    revision: usize,
 }
 
-impl<G: Graph> IntTransactionGraph<G> {
+impl<G> IntTransactionGraph<G> {
     pub fn new(graph: G) -> Self {
-        Self { graph }
+        Self { graph, revision: 0 }
     }
 }
 
-pub struct Transaction<'a, G: Graph> {
-    guard: RwLockReadGuard<'a, IntTransactionGraph<G>>,
+pub struct CachedQuery<T, G, Q> {
+    graph: TransactionGraph<G>,
+    query: Q,
+    result: T,
+    current_revision: usize,
 }
 
-impl<'a, G: Graph> Transaction<'a, G> {
-    fn new(guard: RwLockReadGuard<'a, IntTransactionGraph<G>>) -> Self {
-        Self { guard }
+impl<T, G: Graph, Q: FnMut(&G) -> T> CachedQuery<T, G, Q> {
+    pub fn update(&mut self) {
+        if let Ok(guard) = self.graph.graph.read() {
+            if guard.revision > self.current_revision {
+                self.result = (self.query)(&guard.graph);
+                self.current_revision = guard.revision;
+            }
+        }
     }
 }
 
-impl<'a, G: Graph> Deref for Transaction<'a, G> {
-    type Target = G;
+impl<T, G, Q> Deref for CachedQuery<T, G, Q> {
+    type Target = T;
 
-    fn deref(&self) -> &G {
-        &self.guard.graph
+    fn deref(&self) -> &T {
+        &self.result
     }
 }
 
-pub struct MutTransaction<'a, G: Graph> {
+pub struct Transaction<'a, G> {
     guard: RwLockWriteGuard<'a, IntTransactionGraph<G>>,
     added_triples: HashGraph,
     removed_triples: HashGraph,
 }
 
-impl<'a, G: Graph> MutTransaction<'a, G> {
+impl<'a, G: Graph> Transaction<'a, G> {
     fn new(guard: RwLockWriteGuard<'a, IntTransactionGraph<G>>) -> Self {
-        Self {
+        Transaction {
             guard,
             added_triples: HashGraph::new(),
             removed_triples: HashGraph::new(),
@@ -94,10 +119,11 @@ impl<'a, G: Graph> MutTransaction<'a, G> {
 
         self.guard.graph.remove_all(self.removed_triples.iter());
         self.guard.graph.extend(self.added_triples.into_iter());
+        self.guard.revision += 1;
     }
 }
 
-impl<'a, G: Graph> Graph for MutTransaction<'a, G> {
+impl<'a, G: Graph> Graph for Transaction<'a, G> {
     fn len(&self) -> usize {
         self.guard.graph.len() + self.added_triples.len() - self.removed_triples.len()
     }

@@ -5,5 +5,3 @@ Arr! A rusty RDF triplestore
 
 * Turtle parsing
 * n-Triples parsing
-* Cached queries
-* Transactions
