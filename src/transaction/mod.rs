@@ -9,6 +9,17 @@ pub struct TransactionGraph<G> {
     graph: Arc<RwLock<IntTransactionGraph<G>>>,
 }
 
+struct IntTransactionGraph<G> {
+    graph: G,
+    revision: usize,
+}
+
+impl<G> IntTransactionGraph<G> {
+    pub fn new(graph: G) -> Self {
+        Self { graph, revision: 0 }
+    }
+}
+
 impl<G> Clone for TransactionGraph<G> {
     fn clone(&self) -> Self {
         Self {
@@ -25,14 +36,11 @@ impl<G: Graph> TransactionGraph<G> {
     }
 
     pub fn transaction(&self) -> Transaction<G> {
-        self.graph
-            .write()
-            .map(|guard| Transaction::new(guard))
-            .unwrap()
+        Transaction::new(self.graph.read().unwrap())
     }
 
     pub fn try_transaction(&self) -> Option<Transaction<G>> {
-        match self.graph.try_write() {
+        match self.graph.try_read() {
             Ok(guard) => Some(Transaction::new(guard)),
             Err(TryLockError::WouldBlock) => None,
             #[cfg(not(tarpaulin_include))]
@@ -40,13 +48,16 @@ impl<G: Graph> TransactionGraph<G> {
         }
     }
 
-    pub fn query<T, Q: FnOnce(&G) -> T>(&self, query: Q) -> T {
-        query(&self.graph.read().unwrap().graph)
+    pub fn mut_transaction(&self) -> MutTransaction<G> {
+        self.graph
+            .write()
+            .map(|guard| MutTransaction::new(guard))
+            .unwrap()
     }
 
-    pub fn try_query<T, Q: FnOnce(&G) -> T>(&self, query: Q) -> Option<T> {
-        match self.graph.try_read() {
-            Ok(guard) => Some(query(&guard.graph)),
+    pub fn try_mut_transaction(&self) -> Option<MutTransaction<G>> {
+        match self.graph.try_write() {
+            Ok(guard) => Some(MutTransaction::new(guard)),
             Err(TryLockError::WouldBlock) => None,
             #[cfg(not(tarpaulin_include))]
             _ => panic!("An active transaction panicked (Graph is poisoned)"),
@@ -68,67 +79,33 @@ impl<G: Graph> TransactionGraph<G> {
     }
 }
 
-struct IntTransactionGraph<G> {
-    graph: G,
-    revision: usize,
-}
-
-impl<G> IntTransactionGraph<G> {
-    pub fn new(graph: G) -> Self {
-        Self { graph, revision: 0 }
-    }
-}
-
-pub struct CachedQuery<T, G, Q> {
-    graph: TransactionGraph<G>,
-    query: Q,
-    result: T,
-    current_revision: usize,
-}
-
-impl<T, G, Q: FnMut(&G) -> T> CachedQuery<T, G, Q> {
-    fn new(
-        graph: TransactionGraph<G>,
-        guard: RwLockReadGuard<IntTransactionGraph<G>>,
-        mut query: Q,
-    ) -> Self {
-        Self {
-            graph,
-            result: query(&guard.graph),
-            query,
-            current_revision: guard.revision,
-        }
-    }
-}
-
-impl<T, G: Graph, Q: FnMut(&G) -> T> CachedQuery<T, G, Q> {
-    pub fn update(&mut self) {
-        if let Ok(guard) = self.graph.graph.read() {
-            if guard.revision > self.current_revision {
-                self.result = (self.query)(&guard.graph);
-                self.current_revision = guard.revision;
-            }
-        }
-    }
-}
-
-impl<T, G, Q> Deref for CachedQuery<T, G, Q> {
-    type Target = T;
-
-    fn deref(&self) -> &T {
-        &self.result
-    }
-}
-
 pub struct Transaction<'a, G> {
+    guard: RwLockReadGuard<'a, IntTransactionGraph<G>>,
+}
+
+impl<'a, G> Transaction<'a, G> {
+    fn new(guard: RwLockReadGuard<'a, IntTransactionGraph<G>>) -> Self {
+        Self { guard }
+    }
+}
+
+impl<'a, G> Deref for Transaction<'a, G> {
+    type Target = G;
+
+    fn deref(&self) -> &G {
+        &self.guard.graph
+    }
+}
+
+pub struct MutTransaction<'a, G> {
     guard: RwLockWriteGuard<'a, IntTransactionGraph<G>>,
     added_triples: HashGraph,
     removed_triples: HashGraph,
 }
 
-impl<'a, G: Graph> Transaction<'a, G> {
+impl<'a, G: Graph> MutTransaction<'a, G> {
     fn new(guard: RwLockWriteGuard<'a, IntTransactionGraph<G>>) -> Self {
-        Transaction {
+        Self {
             guard,
             added_triples: HashGraph::new(),
             removed_triples: HashGraph::new(),
@@ -151,7 +128,7 @@ impl<'a, G: Graph> Transaction<'a, G> {
     }
 }
 
-impl<'a, G: Graph> Graph for Transaction<'a, G> {
+impl<'a, G: Graph> Graph for MutTransaction<'a, G> {
     fn len(&self) -> usize {
         self.guard.graph.len() + self.added_triples.len() - self.removed_triples.len()
     }
@@ -208,5 +185,46 @@ impl<'a, G: Graph> Graph for Transaction<'a, G> {
         if cfg!(test) {
             assert!(self.is_valid());
         }
+    }
+}
+
+pub struct CachedQuery<T, G, Q> {
+    graph: TransactionGraph<G>,
+    query: Q,
+    result: T,
+    current_revision: usize,
+}
+
+impl<T, G, Q: FnMut(&G) -> T> CachedQuery<T, G, Q> {
+    fn new(
+        graph: TransactionGraph<G>,
+        guard: RwLockReadGuard<IntTransactionGraph<G>>,
+        mut query: Q,
+    ) -> Self {
+        Self {
+            graph,
+            result: query(&guard.graph),
+            query,
+            current_revision: guard.revision,
+        }
+    }
+}
+
+impl<T, G: Graph, Q: FnMut(&G) -> T> CachedQuery<T, G, Q> {
+    pub fn update(&mut self) {
+        if let Ok(guard) = self.graph.graph.read() {
+            if guard.revision > self.current_revision {
+                self.result = (self.query)(&guard.graph);
+                self.current_revision = guard.revision;
+            }
+        }
+    }
+}
+
+impl<T, G, Q> Deref for CachedQuery<T, G, Q> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        &self.result
     }
 }
