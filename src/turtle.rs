@@ -48,6 +48,12 @@ fn iriref(i: &str) -> IResult<&str, String> {
 
 #[test]
 fn test_iriref() {
-    assert_eq!((" abc", String::from("urn:Übung")), iriref(r"<urn:\u00DCbung> abc").unwrap());
-    assert_eq!((" abc", String::from("urn:Übung")), iriref(r"<urn:\U000000DCbung> abc").unwrap());
+    assert_eq!(
+        (" abc", String::from("urn:Übung")),
+        iriref(r"<urn:\u00DCbung> abc").unwrap()
+    );
+    assert_eq!(
+        (" abc", String::from("urn:Übung")),
+        iriref(r"<urn:\U000000DCbung> abc").unwrap()
+    );
 }
