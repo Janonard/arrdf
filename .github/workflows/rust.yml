@@ -24,5 +24,10 @@ jobs:
       with:
         toolchain: ${{ matrix.toolchain }}
         override: true
+        components: rustfmt, clippy
     - name: Run tests
       run: cargo test --verbose
+    - name: Format
+      run: cargo fmt -- --check
+    - name: Check
+      run: cargo check
