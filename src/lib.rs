@@ -3,6 +3,7 @@ mod hash_graph;
 mod node;
 pub mod set;
 pub mod transaction;
+pub mod turtle;
 
 pub use graph::Graph;
 pub use hash_graph::HashGraph;
