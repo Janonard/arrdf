@@ -9,3 +9,6 @@ edition = "2018"
 [dependencies]
 iri-string = "0.3.0"
 nom = "5.1.2"
+
+[features]
+parsing = []

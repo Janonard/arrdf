@@ -3,6 +3,7 @@ mod hash_graph;
 mod node;
 pub mod set;
 pub mod transaction;
+#[cfg(feature = "parsing")]
 pub mod turtle;
 
 pub use graph::Graph;
