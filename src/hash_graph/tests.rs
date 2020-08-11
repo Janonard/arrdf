@@ -15,10 +15,16 @@ fn len() {
 fn is_empty() {
     let mut testbed = Testbed::new();
     assert!(!testbed.graph.is_empty());
-    
-    testbed.graph.remove(&testbed.node_a, &testbed.predicate_a, &testbed.node_b);
-    testbed.graph.remove(&testbed.node_b, &testbed.predicate_b, &testbed.node_c);
-    testbed.graph.remove(&testbed.node_c, &testbed.predicate_c, &testbed.node_a);
+
+    testbed
+        .graph
+        .remove(&testbed.node_a, &testbed.predicate_a, &testbed.node_b);
+    testbed
+        .graph
+        .remove(&testbed.node_b, &testbed.predicate_b, &testbed.node_c);
+    testbed
+        .graph
+        .remove(&testbed.node_c, &testbed.predicate_c, &testbed.node_a);
 
     assert!(testbed.graph.is_empty());
 }
