@@ -1,22 +1,29 @@
 use crate::Node;
 
 pub trait Graph {
-    fn len(&self) -> usize;
+    fn iter<'a>(&'a self) -> Box<dyn 'a + Iterator<Item = (&'a Node, &'a Node, &'a Node)>>;
+
+    fn insert(&mut self, subject: Node, predicate: Node, object: Node);
+
+    fn remove(&mut self, subject: &Node, predicate: &Node, object: &Node);
+
+    fn len(&self) -> usize {
+        self.iter().count()
+    }
 
     #[cfg(not(tarpaulin_include))]
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
-    fn contains(&self, subject: &Node, predicate: &Node, object: &Node) -> bool;
-
-    fn iter<'a>(&'a self) -> Box<dyn 'a + Iterator<Item = (&'a Node, &'a Node, &'a Node)>>;
+    fn contains(&self, subject: &Node, predicate: &Node, object: &Node) -> bool {
+        self.iter()
+            .any(|(s, p, o)| s == subject && p == predicate && o == object)
+    }
 
     fn is_valid_graph(&self) -> bool {
         self.iter().all(|(s, p, _)| !s.is_literal() && p.is_iri())
     }
-
-    fn insert(&mut self, subject: Node, predicate: Node, object: Node);
 
     #[cfg(not(tarpaulin_include))]
     fn clone_insert(&mut self, subject: &Node, predicate: &Node, object: &Node) {
@@ -42,8 +49,6 @@ pub trait Graph {
         )
     }
 
-    fn remove(&mut self, subject: &Node, predicate: &Node, object: &Node);
-
     #[cfg(not(tarpaulin_include))]
     fn remove_all<'a, G>(&mut self, iter: G)
     where
@@ -54,9 +59,18 @@ pub trait Graph {
         }
     }
 
-    fn retain<F>(&mut self, f: F)
+    fn retain<F>(&mut self, mut f: F)
     where
-        F: FnMut(&Node, &Node, &Node) -> bool;
+        F: FnMut(&Node, &Node, &Node) -> bool,
+    {
+        let mut removed_nodes = std::collections::HashSet::<(Node, Node, Node)>::new();
+        for (s, p, o) in self.iter() {
+            if !f(s, p, o) {
+                removed_nodes.insert((s.clone(), p.clone(), o.clone()));
+            }
+        }
+        self.remove_all(removed_nodes.iter().map(|(s, p, o)| (s, p, o)))
+    }
 
     fn sanitize(&mut self) {
         self.retain(|s, p, _| !s.is_literal() && p.is_iri());
