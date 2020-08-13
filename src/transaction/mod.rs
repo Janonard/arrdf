@@ -28,6 +28,12 @@ impl<G> Clone for TransactionGraph<G> {
     }
 }
 
+impl<G: Graph + Default> Default for TransactionGraph<G> {
+    fn default() -> Self {
+        Self::new(G::default())
+    }
+}
+
 impl<G: Graph> TransactionGraph<G> {
     pub fn new(graph: G) -> Self {
         Self {
