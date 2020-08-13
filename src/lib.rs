@@ -165,16 +165,16 @@
 //! #
 //! # let rust = Node::from("https://www.rust-lang.org/");
 //! # let c = Node::from("http://www.open-std.org/jtc1/sc22/wg14/");
-//! 
+//!
 //! // First, we create a new graph with some triples.
 //! let rust_projects: HashGraph = vec![
 //!     (&rust_lv2, &maintainer, &janonard),
 //!     (&rust_lv2, &programming_language, &rust),
 //! ].into_iter().collect();
-//! 
+//!
 //! // Then, we wrap it in a `TransactionGraph`.
 //! let rust_projects = TransactionGraph::new(rust_projects);
-//! 
+//!
 //! // Here we create a cached query. If the the underlying graph changes, the closure is executed
 //! // again to produce the new query result.
 //! let mut rust_lv2_maintainers = rust_projects.cached_query(|g: &HashGraph| {
@@ -187,22 +187,22 @@
 //!     }).collect();
 //!     maintainers
 //! });
-//! 
+//!
 //! // The returned object dereferences to the created `HashSet`:
 //! assert_eq!(1, rust_lv2_maintainers.len());
 //! assert!(rust_lv2_maintainers.contains(&janonard));
-//! 
+//!
 //! // If you want to alter the graph, you have to start a mutable transaction.
 //! // Immutable transactions that only provide immutable access are available too!
 //! let mut transaction = rust_projects.mut_transaction();
-//! 
+//!
 //! // A mutable transaction implements `Graph`!
 //! transaction.clone_insert(&rust_lv2, &maintainer, &torvalds);
-//! 
+//!
 //! // You have to commit your change once your done. If the transaction is dropped,
 //! // all changes are discarded.
 //! transaction.commit();
-//! 
+//!
 //! // Now, we update our query and assert the result:
 //! rust_lv2_maintainers.update();
 //! assert_eq!(2, rust_lv2_maintainers.len());
