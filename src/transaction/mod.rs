@@ -159,7 +159,7 @@ impl<'a, G: Graph> Graph for MutTransaction<'a, G> {
     fn insert(&mut self, subject: Node, predicate: Node, object: Node) {
         if self.removed_triples.contains(&subject, &predicate, &object) {
             self.removed_triples.remove(&subject, &predicate, &object)
-        } else {
+        } else if !self.guard.graph.contains(&subject, &predicate, &object) {
             self.added_triples.insert(subject, predicate, object);
         }
 
@@ -171,7 +171,7 @@ impl<'a, G: Graph> Graph for MutTransaction<'a, G> {
     fn remove(&mut self, subject: &Node, predicate: &Node, object: &Node) {
         if self.added_triples.contains(&subject, &predicate, &object) {
             self.added_triples.remove(&subject, &predicate, &object)
-        } else {
+        } else if self.guard.graph.contains(&subject, &predicate, &object) {
             self.removed_triples
                 .clone_insert(subject, predicate, object);
         }

@@ -81,6 +81,10 @@ fn mut_transaction() {
     let predicate_b = &testbed.predicate_b;
     let predicate_c = &testbed.predicate_c;
 
+    /// Actually test the mutation graph.
+    /// 
+    /// All modifications are done twice to also test no-op operations (e.g. removing a triple
+    /// that isn't in the store).
     fn run_transaction(t: &mut MutTransaction<HashGraph>, testbed: &Testbed) {
         let node_a = &testbed.node_a;
         let node_b = &testbed.node_b;
@@ -95,6 +99,7 @@ fn mut_transaction() {
         assert!(t.contains(node_c, predicate_c, node_a));
 
         t.clone_insert(node_a, predicate_a, node_a);
+        t.clone_insert(node_a, predicate_a, node_a);
 
         assert_eq!(4, t.len());
         assert!(t.contains(node_a, predicate_a, node_b));
@@ -103,12 +108,14 @@ fn mut_transaction() {
         assert!(t.contains(node_a, predicate_a, node_a));
 
         t.remove(node_a, predicate_a, node_a);
+        t.remove(node_a, predicate_a, node_a);
 
         assert_eq!(3, t.len());
         assert!(t.contains(node_a, predicate_a, node_b));
         assert!(t.contains(node_b, predicate_b, node_c));
         assert!(t.contains(node_c, predicate_c, node_a));
 
+        t.remove(node_a, predicate_a, node_b);
         t.remove(node_a, predicate_a, node_b);
 
         assert_eq!(2, t.len());
@@ -117,6 +124,7 @@ fn mut_transaction() {
         assert!(t.contains(node_c, predicate_c, node_a));
 
         t.clone_insert(node_a, predicate_a, node_b);
+        t.clone_insert(node_a, predicate_a, node_b);
 
         assert_eq!(3, t.len());
         assert!(t.contains(node_a, predicate_a, node_b));
@@ -124,6 +132,8 @@ fn mut_transaction() {
         assert!(t.contains(node_c, predicate_c, node_a));
 
         t.clone_insert(node_b, predicate_b, node_b);
+        t.clone_insert(node_b, predicate_b, node_b);
+        t.retain(|s, _, _| s == node_a);
         t.retain(|s, _, _| s == node_a);
 
         let result: HashGraph = t.iter().collect();
