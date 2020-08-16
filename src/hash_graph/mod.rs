@@ -6,7 +6,7 @@ mod tests;
 
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct HashGraph {
-    nodes: HashMap<Node, HashSet<(Node, Node)>>,
+    nodes: HashMap<Node, HashMap<Node, HashSet<Node>>>,
 }
 
 impl HashGraph {
@@ -15,69 +15,77 @@ impl HashGraph {
             nodes: HashMap::new(),
         }
     }
-
-    #[cfg(not(tarpaulin_include))]
-    pub fn with_capacity(n_subjects: usize) -> Self {
-        HashGraph {
-            nodes: HashMap::with_capacity(n_subjects),
-        }
-    }
-
-    #[cfg(not(tarpaulin_include))]
-    pub fn shrink_to_fit(&mut self) {
-        self.nodes.retain(|_, relationships| {
-            relationships.shrink_to_fit();
-            !relationships.is_empty()
-        })
-    }
 }
 
 impl Graph for HashGraph {
     fn len(&self) -> usize {
-        self.nodes.iter().map(|(_, r)| r.len()).sum()
+        self.nodes
+            .values()
+            .map(|relationships| {
+                relationships
+                    .values()
+                    .map(|objects| objects.len())
+                    .sum::<usize>()
+            })
+            .sum::<usize>()
     }
 
     fn is_empty(&self) -> bool {
-        if self.nodes.is_empty() {
-            true
-        } else {
-            self.nodes.iter().all(|(_, rels)| rels.is_empty())
-        }
+        self.nodes
+            .values()
+            .all(|rels| rels.values().all(|objects| objects.is_empty()))
     }
 
     fn contains(&self, subject: &Node, predicate: &Node, object: &Node) -> bool {
-        if let Some(relationships) = self.nodes.get(subject) {
-            relationships.contains(&(predicate.clone(), object.clone()))
-        } else {
-            false
-        }
+        self.nodes
+            .get(subject)
+            .and_then(|r| r.get(predicate))
+            .map(|o| o.contains(object))
+            .unwrap_or(false)
     }
 
     fn iter<'a>(&'a self) -> Box<dyn 'a + Iterator<Item = (&'a Node, &'a Node, &'a Node)>> {
-        Box::new(
-            self.nodes
-                .iter()
-                .map(|(s, rels)| rels.iter().map(move |(p, o)| (s, p, o)))
-                .flatten(),
-        )
+        let relationships = self
+            .nodes
+            .iter()
+            .map(|(subject, relationships)| {
+                relationships
+                    .iter()
+                    .map(move |(predicate, objects)| {
+                        objects
+                            .iter()
+                            .map(move |object| (subject, predicate, object))
+                    })
+                    .flatten()
+            })
+            .flatten();
+        Box::new(relationships)
     }
 
     fn insert(&mut self, subject: Node, predicate: Node, object: Node) {
         self.nodes
             .entry(subject)
+            .or_insert_with(HashMap::new)
+            .entry(predicate)
             .or_insert_with(HashSet::new)
-            .insert((predicate, object));
+            .insert(object);
     }
 
     fn remove(&mut self, subject: &Node, predicate: &Node, object: &Node) {
-        if let Some(relationships) = self.nodes.get_mut(subject) {
-            relationships.retain(|(p, o)| p != predicate || o != object);
+        let objects = self
+            .nodes
+            .get_mut(subject)
+            .and_then(|relationships| relationships.get_mut(predicate));
+        if let Some(objects) = objects {
+            objects.remove(object);
         }
     }
 
     fn retain<F: FnMut(&Node, &Node, &Node) -> bool>(&mut self, mut f: F) {
         for (subject, relationships) in self.nodes.iter_mut() {
-            relationships.retain(|(predicate, object)| f(subject, predicate, object));
+            for (predicate, objects) in relationships.iter_mut() {
+                objects.retain(|object| f(subject, predicate, object));
+            }
         }
     }
 }
@@ -112,11 +120,21 @@ impl std::iter::IntoIterator for HashGraph {
     type IntoIter = Box<dyn Iterator<Item = (Node, Node, Node)>>;
 
     fn into_iter(self) -> Self::IntoIter {
-        Box::new(
-            self.nodes
-                .into_iter()
-                .map(|(s, rels)| rels.into_iter().map(move |(p, o)| (s.clone(), p, o)))
-                .flatten(),
-        )
+        let relationships = self
+            .nodes
+            .into_iter()
+            .map(|(subject, relationships)| {
+                relationships
+                    .into_iter()
+                    .map(|(predicate, objects)| {
+                        objects
+                            .into_iter()
+                            .map(move |object| (predicate.clone(), object))
+                    })
+                    .flatten()
+                    .map(move |(predicate, object)| (subject.clone(), predicate, object))
+            })
+            .flatten();
+        Box::new(relationships)
     }
 }
