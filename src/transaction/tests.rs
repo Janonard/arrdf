@@ -82,7 +82,7 @@ fn mut_transaction() {
     let predicate_c = &testbed.predicate_c;
 
     /// Actually test the mutation graph.
-    /// 
+    ///
     /// All modifications are done twice to also test no-op operations (e.g. removing a triple
     /// that isn't in the store).
     fn run_transaction(t: &mut MutTransaction<HashGraph>, testbed: &Testbed) {
