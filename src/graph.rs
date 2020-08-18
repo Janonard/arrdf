@@ -126,8 +126,9 @@ pub trait Graph {
 
     /// Return `true if the graph is valid, non-generalized RDF graph.
     ///
-    /// A graph is a "valid" RDF graph if and only if every subject is either an IRI or a blank node and every predicate is an IRI.
-    /// Such a valid RDF graph may be exported using a concrete syntax for RDF, like Turtle or n-Triples.
+    /// In this crate, all graphs are "generalized graphs" per default. This means that both subject,
+    /// predicate and object may be an IRI, a literal or a blank node. However, concrete implementations
+    /// of RDF require that a subject must not be a literal and a predicate must be an IRI.
     ///
     /// You can use the [`sanitize`](#method.sanitize) method to remove triples that don't obey to this rule.
     fn is_valid_graph(&self) -> bool {
@@ -207,6 +208,24 @@ pub trait Graph {
         }
     }
 
+    /// Extend the graph with the cloned contents of the iterator.
+    ///
+    /// This version of the [`extend`](#method.extend) method is useful to extend a graph with an
+    /// iterator over another graph.
+    ///
+    /// ## Examples
+    /// ```
+    /// use arrdf::{Node, Graph, HashGraph};
+    ///
+    /// let node_a = Node::from("Node A");
+    /// let node_b = Node::from("Node B");
+    /// let node_c = Node::from("Node C");
+    ///
+    /// let mut graph_a: HashGraph = vec![(&node_a, &node_b, &node_c)].into_iter().collect();
+    /// let graph_b: HashGraph = vec![(node_c, node_b, node_a)].into_iter().collect();
+    ///
+    /// graph_a.clone_extend(graph_b.iter());
+    /// ```
     fn clone_extend<'a, G>(&mut self, iter: G)
     where
         G: 'a + IntoIterator<Item = (&'a Node, &'a Node, &'a Node)>,
@@ -217,6 +236,21 @@ pub trait Graph {
         )
     }
 
+    /// Remove all triples produced by the iterator.
+    ///
+    /// ## Examples
+    /// ```
+    /// use arrdf::{Node, Graph, HashGraph};
+    ///
+    /// let node_a = Node::from("Node A");
+    /// let node_b = Node::from("Node B");
+    /// let node_c = Node::from("Node C");
+    ///
+    /// let mut graph_a: HashGraph = vec![(&node_a, &node_b, &node_c)].into_iter().collect();
+    /// let graph_b: HashGraph = vec![(node_c, node_b, node_a)].into_iter().collect();
+    ///
+    /// graph_a.remove_all(graph_b.iter());
+    /// ```
     #[cfg(not(tarpaulin_include))]
     fn remove_all<'a, G>(&mut self, iter: G)
     where
@@ -227,6 +261,9 @@ pub trait Graph {
         }
     }
 
+    /// Retain only triples where the predicate `f` returns `true`.
+    ///
+    /// In other words, remove all triples such that the predicate `f` returns `false`.
     fn retain<F>(&mut self, mut f: F)
     where
         F: FnMut(&Node, &Node, &Node) -> bool,
@@ -240,6 +277,14 @@ pub trait Graph {
         self.remove_all(removed_nodes.iter().map(|(s, p, o)| (s, p, o)))
     }
 
+    /// Remove all triples that don't comply with the W3C definition of a well-formed RDF triple.
+    ///
+    /// In this crate, all graphs are "generalized graphs" per default. This means that both subject,
+    /// predicate and object may be an IRI, a literal or a blank node. However, concrete implementations
+    /// of RDF require that a subject must not be a literal and a predicate must be an IRI.
+    ///
+    /// The [`is_valid_graph`](#method.is_valid_graph) method returns `true` if all triples are well-formed and
+    /// therefore checks if `sanitize` would remove any triples.
     fn sanitize(&mut self) {
         self.retain(|s, p, _| !s.is_literal() && p.is_iri());
     }
