@@ -29,6 +29,7 @@ impl<G> Clone for TransactionGraph<G> {
 }
 
 impl<G: Graph + Default> Default for TransactionGraph<G> {
+    #[cfg(not(tarpaulin_include))]
     fn default() -> Self {
         Self::new(G::default())
     }
@@ -185,8 +186,18 @@ impl<'a, G: Graph> Graph for MutTransaction<'a, G> {
     where
         F: FnMut(&Node, &Node, &Node) -> bool,
     {
-        let newly_removed_triples: HashGraph = self.iter().filter(|(s, p, o)| f(s, p, o)).collect();
+        let newly_removed_triples: HashGraph =
+            self.iter().filter(|(s, p, o)| !f(s, p, o)).collect();
         self.remove_all(newly_removed_triples.iter());
+
+        if cfg!(test) {
+            assert!(self.is_valid());
+        }
+    }
+
+    fn clear(&mut self) {
+        self.added_triples.clear();
+        self.removed_triples.clone_extend(self.guard.graph.iter());
 
         if cfg!(test) {
             assert!(self.is_valid());

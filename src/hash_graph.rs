@@ -85,6 +85,10 @@ impl Graph for HashGraph {
             }
         }
     }
+
+    fn clear(&mut self) {
+        self.nodes.clear();
+    }
 }
 
 impl std::iter::FromIterator<(Node, Node, Node)> for HashGraph {
@@ -103,12 +107,9 @@ impl<'a> std::iter::FromIterator<(&'a Node, &'a Node, &'a Node)> for HashGraph {
     where
         T: IntoIterator<Item = (&'a Node, &'a Node, &'a Node)>,
     {
-        let mut graph = HashGraph::new();
-        graph.extend(
-            iter.into_iter()
-                .map(|(s, p, o)| (s.clone(), p.clone(), o.clone())),
-        );
-        graph
+        iter.into_iter()
+            .map(|(s, p, o)| (s.clone(), p.clone(), o.clone()))
+            .collect()
     }
 }
 
@@ -139,6 +140,6 @@ impl std::iter::IntoIterator for HashGraph {
 #[test]
 #[cfg(test)]
 fn validate() {
-    let validator = crate::Testbed::new(HashGraph::new());
+    let mut validator = crate::Validator::new(HashGraph::new());
     validator.validate();
 }

@@ -288,6 +288,11 @@ pub trait Graph {
     fn sanitize(&mut self) {
         self.retain(|s, p, _| !s.is_literal() && p.is_iri());
     }
+
+    /// Remove all triples from the graph.
+    fn clear(&mut self) {
+        self.retain(|_, _, _| false);
+    }
 }
 
 #[cfg(test)]
@@ -308,6 +313,9 @@ impl Graph for std::collections::HashSet<(Node, Node, Node)> {
 #[cfg(test)]
 #[test]
 fn validate() {
-    let validator = crate::Testbed::new(std::collections::HashSet::<(Node, Node, Node)>::new());
+    // A test of the trivial Graph implementation to test standard implementations.
+    use std::collections::HashSet;
+    let graph: HashSet<(Node, Node, Node)> = HashSet::new();
+    let mut validator = crate::Validator::new(graph);
     validator.validate();
 }

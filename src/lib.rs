@@ -222,4 +222,4 @@ pub use node::Node;
 #[cfg(test)]
 mod validator;
 #[cfg(test)]
-use validator::Testbed;
+use validator::Validator;
