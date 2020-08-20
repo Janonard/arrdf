@@ -1,9 +1,6 @@
 use crate::{Graph, Node};
 use std::collections::{HashMap, HashSet};
 
-#[cfg(test)]
-mod tests;
-
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct HashGraph {
     nodes: HashMap<Node, HashMap<Node, HashSet<Node>>>,
@@ -137,4 +134,11 @@ impl std::iter::IntoIterator for HashGraph {
             .flatten();
         Box::new(relationships)
     }
+}
+
+#[test]
+#[cfg(test)]
+fn validate() {
+    let validator = crate::Testbed::new(HashGraph::new());
+    validator.validate();
 }

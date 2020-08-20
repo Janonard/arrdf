@@ -74,9 +74,9 @@ mod tests {
 
     #[test]
     fn difference() {
-        let testbed = Testbed::new();
+        let testbed = Testbed::new(HashGraph::new());
 
-        let a = testbed.graph;
+        let a = testbed.graph();
         let mut b = HashGraph::new();
         b.insert(
             testbed.node_a.clone(),
@@ -98,9 +98,9 @@ mod tests {
 
     #[test]
     fn symmetric_difference() {
-        let testbed = Testbed::new();
+        let testbed = Testbed::new(HashGraph::new());
 
-        let a = testbed.graph;
+        let a = testbed.graph();
         let mut b = HashGraph::new();
         b.insert(
             testbed.node_a.clone(),
@@ -123,9 +123,9 @@ mod tests {
 
     #[test]
     fn union() {
-        let testbed = Testbed::new();
+        let testbed = Testbed::new(HashGraph::new());
 
-        let a = testbed.graph;
+        let a = testbed.graph();
         let mut b = HashGraph::new();
         b.insert(
             testbed.node_a.clone(),
@@ -149,9 +149,9 @@ mod tests {
 
     #[test]
     fn is_subset_superset() {
-        let testbed = Testbed::new();
+        let testbed = Testbed::new(HashGraph::new());
 
-        let a = testbed.graph;
+        let a = testbed.graph();
         let mut b = HashGraph::new();
         b.insert(
             testbed.node_a.clone(),
@@ -178,9 +178,9 @@ mod tests {
 
     #[test]
     fn is_disjoint() {
-        let testbed = Testbed::new();
+        let testbed = Testbed::new(HashGraph::new());
 
-        let a = testbed.graph;
+        let a = testbed.graph();
         let mut b = HashGraph::new();
         b.insert(
             testbed.node_a.clone(),

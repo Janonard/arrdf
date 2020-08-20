@@ -2,7 +2,7 @@ use crate::Node;
 
 /// A generalized RDF triple store.
 ///
-/// If you just want to use a triple store, check out the [`HashGraph`](struct.HashGraph.html), which implements this trait.
+/// If you just want to have a simple triple store, use the optimized [`HashGraph`](struct.HashGraph.html).
 ///
 /// An implementation of this trait only requires very few methods since many others have a default implementation based on them.
 /// However, you may re-implement provided methods if your underlying data structure allows optimizations for them since
@@ -288,4 +288,26 @@ pub trait Graph {
     fn sanitize(&mut self) {
         self.retain(|s, p, _| !s.is_literal() && p.is_iri());
     }
+}
+
+#[cfg(test)]
+impl Graph for std::collections::HashSet<(Node, Node, Node)> {
+    fn iter<'a>(&'a self) -> Box<dyn Iterator<Item = (&'a Node, &'a Node, &'a Node)> + 'a> {
+        Box::new(self.iter().map(|(s, p, o)| (s, p, o)))
+    }
+
+    fn insert(&mut self, subject: Node, predicate: Node, object: Node) {
+        self.insert((subject, predicate, object));
+    }
+
+    fn remove(&mut self, subject: &Node, predicate: &Node, object: &Node) {
+        self.remove(&(subject.clone(), predicate.clone(), object.clone()));
+    }
+}
+
+#[cfg(test)]
+#[test]
+fn validate() {
+    let validator = crate::Testbed::new(std::collections::HashSet::<(Node, Node, Node)>::new());
+    validator.validate();
 }

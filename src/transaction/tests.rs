@@ -3,8 +3,8 @@ use crate::*;
 
 #[test]
 fn query() {
-    let testbed = Testbed::new();
-    let graph = TransactionGraph::new(testbed.graph);
+    let testbed = Testbed::new(HashGraph::new());
+    let graph = TransactionGraph::new(testbed.graph());
     let node_a = &testbed.node_a;
     let node_b = &testbed.node_b;
     let node_c = &testbed.node_c;
@@ -20,8 +20,8 @@ fn query() {
 
 #[test]
 fn try_query() {
-    let testbed = Testbed::new();
-    let graph = TransactionGraph::new(testbed.graph);
+    let testbed = Testbed::new(HashGraph::new());
+    let graph = TransactionGraph::new(testbed.graph());
     let node_a = &testbed.node_a;
     let node_b = &testbed.node_b;
     let node_c = &testbed.node_c;
@@ -50,8 +50,8 @@ fn try_query() {
 
 #[test]
 fn cached_query() {
-    let testbed = Testbed::new();
-    let graph = TransactionGraph::new(testbed.graph);
+    let testbed = Testbed::new(HashGraph::new());
+    let graph = TransactionGraph::new(testbed.graph());
     let node_a = &testbed.node_a;
     let predicate_a = &testbed.predicate_a;
 
@@ -72,8 +72,8 @@ fn cached_query() {
 
 #[test]
 fn mut_transaction() {
-    let testbed = Testbed::new();
-    let graph = TransactionGraph::new(testbed.graph.clone());
+    let testbed = Testbed::new(HashGraph::new());
+    let graph = TransactionGraph::new(testbed.graph());
     let node_a = &testbed.node_a;
     let node_b = &testbed.node_b;
     let node_c = &testbed.node_c;
@@ -85,7 +85,7 @@ fn mut_transaction() {
     ///
     /// All modifications are done twice to also test no-op operations (e.g. removing a triple
     /// that isn't in the store).
-    fn run_transaction(t: &mut MutTransaction<HashGraph>, testbed: &Testbed) {
+    fn run_transaction(t: &mut MutTransaction<HashGraph>, testbed: &Testbed<HashGraph>) {
         let node_a = &testbed.node_a;
         let node_b = &testbed.node_b;
         let node_c = &testbed.node_c;
