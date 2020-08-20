@@ -68,26 +68,21 @@
 //! ].into_iter().collect();
 //!
 //! // Let's query the maintainers of projects that are written in Rust:
-//! let projects: HashSet<Node> = graph
-//!     .iter()
-//!     .filter_map(|(subject, predicate, object)| {
-//!         if predicate == &programming_language && object == &rust {
-//!             Some(subject.clone())
-//!         } else {
-//!             None
-//!         }
-//!     })
-//!     .collect();
-//!
 //! let maintainers: HashSet<Node> = graph
+//!     // Iterate over all triples in the graph:
 //!     .iter()
-//!     .filter_map(|(subject, predicate, object)| {
-//!         if projects.contains(subject) && predicate == &maintainer {
-//!             Some(object.clone())
-//!         } else {
-//!             None
-//!         }
+//!     // Keep only those triples where the programming language is Rust.
+//!     .filter(|(_, predicate, object)| {
+//!         *predicate == &programming_language && *object == &rust
 //!     })
+//!     // For every project, retrieve an iterator over it's maintainers.
+//!     .map(|(project, _, _)| graph.objects(project, &maintainer))
+//!     // Flatten the iterator over iterators over triples
+//!     // to an iterator over triples.
+//!     .flatten()
+//!     // Only keep the object of those triples.
+//!     .map(|(_, _, maintainer)| maintainer.clone())
+//!     // Collect them in a set.
 //!     .collect();
 //!
 //! assert_eq!(1, maintainers.len());

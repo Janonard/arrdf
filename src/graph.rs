@@ -293,6 +293,72 @@ pub trait Graph {
     fn clear(&mut self) {
         self.retain(|_, _, _| false);
     }
+
+    /// Get all relationships of a given subject.
+    ///
+    /// This is equivalent to iterating over all triples and filtering all triples without the
+    /// given subject, but certain implementations may do so in a more time-efficient way.
+    ///
+    /// ## Examples
+    /// ```
+    /// use arrdf::{Node, Graph, HashGraph};
+    ///
+    /// let node_a = Node::from("Node A");
+    /// let node_b = Node::from("Node B");
+    /// let node_c = Node::from("Node C");
+    ///
+    /// let mut graph: HashGraph = vec![(&node_a, &node_b, &node_c)].into_iter().collect();
+    ///
+    /// // Retreive the single relationship of node_a.
+    /// let relationships: HashGraph = graph.relationships(&node_a).collect();
+    /// assert_eq!(1, relationships.len());
+    /// assert!(relationships.contains(&node_a, &node_b, &node_c));
+    ///
+    /// // node_b has no relationships and therefore the query is empty.
+    /// let relationships: HashGraph = graph.relationships(&node_b).collect();
+    /// assert!(relationships.is_empty());
+    /// ```
+    fn relationships<'a>(
+        &'a self,
+        subject: &'a Node,
+    ) -> Box<dyn 'a + Iterator<Item = (&Node, &Node, &Node)>> {
+        Box::new(self.iter().filter(move |(s, _, _)| *s == subject))
+    }
+
+    /// Get all objects that have a given relationship to the subject.
+    ///
+    /// This is equivalent to iterating over all triples and filtering all triples without the
+    /// given subject and predicate, but certain implementations may do so in a more time-efficient way.
+    ///
+    /// ## Examples
+    /// ```
+    /// use arrdf::{Node, Graph, HashGraph};
+    ///
+    /// let node_a = Node::from("Node A");
+    /// let node_b = Node::from("Node B");
+    /// let node_c = Node::from("Node C");
+    ///
+    /// let mut graph: HashGraph = vec![(&node_a, &node_b, &node_c)].into_iter().collect();
+    ///
+    /// // Retreive the single object with a node_b-relationship to node_a.
+    /// let objects: HashGraph = graph.objects(&node_a, &node_b).collect();
+    /// assert_eq!(1, objects.len());
+    /// assert!(objects.contains(&node_a, &node_b, &node_c));
+    ///
+    /// // There are no objects with a node_a-relationship to node_a and therefore the query is empty.
+    /// let objects: HashGraph = graph.objects(&node_a, &node_a).collect();
+    /// assert!(objects.is_empty());
+    /// ```
+    fn objects<'a>(
+        &'a self,
+        subject: &'a Node,
+        predicate: &'a Node,
+    ) -> Box<dyn 'a + Iterator<Item = (&Node, &Node, &Node)>> {
+        Box::new(
+            self.iter()
+                .filter(move |(s, p, _)| *s == subject && *p == predicate),
+        )
+    }
 }
 
 #[cfg(test)]

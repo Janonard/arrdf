@@ -1,12 +1,20 @@
 use crate::{Graph, Node};
 use std::collections::{HashMap, HashSet};
 
+/// A canonical implementation of the `Graph` trait.
+///
+/// The `HashGraph` implements the `Graph` trait with a hierarchy of `HashMap`s and a `HashSet` to
+/// efficiently support path traversals and containment queries. If you simply want to use a `Graph`,
+/// use this one.
+///
+/// Check out the [crate-level introduction](index.html) for some examples.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct HashGraph {
     nodes: HashMap<Node, HashMap<Node, HashSet<Node>>>,
 }
 
 impl HashGraph {
+    /// Create a new, empty graph.
     pub fn new() -> Self {
         HashGraph {
             nodes: HashMap::new(),
@@ -88,6 +96,42 @@ impl Graph for HashGraph {
 
     fn clear(&mut self) {
         self.nodes.clear();
+    }
+
+    fn relationships<'a>(
+        &'a self,
+        subject: &'a Node,
+    ) -> Box<dyn 'a + Iterator<Item = (&Node, &Node, &Node)>> {
+        if let Some(relationships) = self.nodes.get(subject) {
+            let iter = relationships
+                .iter()
+                .map(|(predicate, objects)| objects.iter().map(move |object| (predicate, object)))
+                .flatten();
+            let iter = iter.map(move |(predicate, object)| (subject, predicate, object));
+            Box::new(iter)
+        } else {
+            Box::new(std::iter::empty())
+        }
+    }
+
+    fn objects<'a>(
+        &'a self,
+        subject: &'a Node,
+        predicate: &'a Node,
+    ) -> Box<dyn 'a + Iterator<Item = (&Node, &Node, &Node)>> {
+        if let Some(objects) = self
+            .nodes
+            .get(subject)
+            .and_then(|relationships| relationships.get(predicate))
+        {
+            Box::new(
+                objects
+                    .iter()
+                    .map(move |object| (subject, predicate, object)),
+            )
+        } else {
+            Box::new(std::iter::empty())
+        }
     }
 }
 

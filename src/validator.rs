@@ -199,6 +199,35 @@ impl<G: Graph> Validator<G> {
         assert!(self.graph.contains(node_c, predicate_c, node_a));
     }
 
+    fn relationships(&mut self) {
+        let relationships: Vec<(&Node, &Node, &Node)> =
+            self.graph.relationships(&self.node_a).collect();
+        assert_eq!(1, relationships.len());
+        assert_eq!(
+            (&self.node_a, &self.predicate_a, &self.node_b),
+            relationships[0]
+        );
+
+        let relationships: Vec<(&Node, &Node, &Node)> =
+            self.graph.relationships(&self.predicate_a).collect();
+        assert!(relationships.is_empty());
+    }
+
+    fn objects(&mut self) {
+        let objects: Vec<(&Node, &Node, &Node)> = self
+            .graph
+            .objects(&self.node_a, &self.predicate_a)
+            .collect();
+        assert_eq!(1, objects.len());
+        assert_eq!((&self.node_a, &self.predicate_a, &self.node_b), objects[0]);
+
+        let objects: Vec<(&Node, &Node, &Node)> = self
+            .graph
+            .objects(&self.node_a, &self.predicate_b)
+            .collect();
+        assert!(objects.is_empty());
+    }
+
     pub fn validate(&mut self) {
         self.len();
         self.restore_graph();
@@ -217,5 +246,9 @@ impl<G: Graph> Validator<G> {
         self.extend();
         self.restore_graph();
         self.duplicate_actions();
+        self.restore_graph();
+        self.relationships();
+        self.restore_graph();
+        self.objects();
     }
 }
