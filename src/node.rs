@@ -1,5 +1,4 @@
 use iri_string::spec::IriSpec;
-use iri_string::types::IriStr;
 use iri_string::validate::iri;
 use std::sync::Arc;
 
@@ -76,10 +75,6 @@ impl Node {
 
     pub fn as_str(&self) -> &str {
         self.referent.as_ref()
-    }
-
-    pub fn as_iri(&self) -> Result<&IriStr, iri_string::validate::Error> {
-        IriStr::new(self.as_str())
     }
 
     #[cfg(not(tarpaulin_include))]
